@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build output
+library/
+temp/
+
+# Cocos Creator specific files
+settings/
+profiles/
+
+# Assets
+assets/**/*.meta
+*.meta
+
+# Logs
+*.log

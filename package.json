@@ -1,0 +1,21 @@
+{
+  "name": "bubblepop",
+  "uuid": "23e015b1-23b5-4803-a619-00726f0d3914",
+  "creator": {
+    "version": "3.8.6"
+  },
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --write \"assets/scripts/**/*.ts\"",
+    "format:check": "prettier --check \"assets/scripts/**/*.ts\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "prettier": "^3.6.2"
+  }
+}
