@@ -2,8 +2,19 @@
   "__version__": "1.0.6",
   "general": {
     "designResolution": {
-      "width": 720,
+      "width": 880,
       "height": 1280
     }
+  },
+  "custom_joint_texture_layouts": [],
+  "sorting-layer": {
+    "layers": [
+      {
+        "id": 0,
+        "name": "default",
+        "value": 0
+      }
+    ],
+    "increaseId": 1
   }
 }

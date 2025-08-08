@@ -1,0 +1,701 @@
+{
+    "level": {
+        "timeToPlay": 330,
+        "numberCellLock": 3,
+        "itemHiden": 5,
+        "cells": [
+            {
+                "posX": -9,
+                "posY": 6,
+                "cellType": 0,
+                "numberLayer": 0,
+                "moveType": 0,
+                "speed": 0,
+                "isLock": 0,
+                "itemsLayer": [
+                    {
+                        "items": [
+                            0,
+                            157,
+                            157
+                        ]
+                    },
+                    {
+                        "items": [
+                            89,
+                            1,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            148,
+                            52,
+                            52
+                        ]
+                    },
+                    {
+                        "items": [
+                            303,
+                            0,
+                            172
+                        ]
+                    },
+                    {
+                        "items": [
+                            113,
+                            0,
+                            223
+                        ]
+                    },
+                    {
+                        "items": [
+                            190,
+                            0,
+                            16
+                        ]
+                    },
+                    {
+                        "items": [
+                            0,
+                            185,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "posX": -9,
+                "posY": 2,
+                "cellType": 0,
+                "numberLayer": 0,
+                "moveType": 0,
+                "speed": 0,
+                "isLock": 0,
+                "itemsLayer": [
+                    {
+                        "items": [
+                            230,
+                            0,
+                            38
+                        ]
+                    },
+                    {
+                        "items": [
+                            277,
+                            0,
+                            277
+                        ]
+                    },
+                    {
+                        "items": [
+                            31,
+                            31,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            42,
+                            42,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            16,
+                            30,
+                            30
+                        ]
+                    },
+                    {
+                        "items": [
+                            72,
+                            72,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            178,
+                            0,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "posX": 3,
+                "posY": 2,
+                "cellType": 0,
+                "numberLayer": 0,
+                "moveType": 0,
+                "speed": 0,
+                "isLock": 0,
+                "itemsLayer": [
+                    {
+                        "items": [
+                            310,
+                            0,
+                            310
+                        ]
+                    },
+                    {
+                        "items": [
+                            0,
+                            103,
+                            103
+                        ]
+                    },
+                    {
+                        "items": [
+                            61,
+                            32,
+                            32
+                        ]
+                    },
+                    {
+                        "items": [
+                            80,
+                            0,
+                            80
+                        ]
+                    },
+                    {
+                        "items": [
+                            81,
+                            77,
+                            81
+                        ]
+                    },
+                    {
+                        "items": [
+                            221,
+                            0,
+                            72
+                        ]
+                    },
+                    {
+                        "items": [
+                            185,
+                            185,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "posX": -9,
+                "posY": -6,
+                "cellType": 0,
+                "numberLayer": 0,
+                "moveType": 0,
+                "speed": 0,
+                "isLock": 0,
+                "itemsLayer": [
+                    {
+                        "items": [
+                            120,
+                            115,
+                            310
+                        ]
+                    },
+                    {
+                        "items": [
+                            254,
+                            254,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            162,
+                            5,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            80,
+                            147,
+                            32
+                        ]
+                    },
+                    {
+                        "items": [
+                            0,
+                            30,
+                            3
+                        ]
+                    },
+                    {
+                        "items": [
+                            253,
+                            12,
+                            12
+                        ]
+                    }
+                ]
+            },
+            {
+                "posX": -9,
+                "posY": -2,
+                "cellType": 0,
+                "numberLayer": 0,
+                "moveType": 0,
+                "speed": 0,
+                "isLock": 0,
+                "itemsLayer": [
+                    {
+                        "items": [
+                            203,
+                            203,
+                            84
+                        ]
+                    },
+                    {
+                        "items": [
+                            52,
+                            0,
+                            14
+                        ]
+                    },
+                    {
+                        "items": [
+                            188,
+                            0,
+                            60
+                        ]
+                    },
+                    {
+                        "items": [
+                            177,
+                            0,
+                            77
+                        ]
+                    },
+                    {
+                        "items": [
+                            64,
+                            0,
+                            113
+                        ]
+                    },
+                    {
+                        "items": [
+                            77,
+                            0,
+                            167
+                        ]
+                    }
+                ]
+            },
+            {
+                "posX": 3,
+                "posY": -2,
+                "cellType": 0,
+                "numberLayer": 0,
+                "moveType": 0,
+                "speed": 0,
+                "isLock": 1,
+                "itemsLayer": [
+                    {
+                        "items": [
+                            89,
+                            157,
+                            89
+                        ]
+                    },
+                    {
+                        "items": [
+                            264,
+                            264,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            0,
+                            277,
+                            264
+                        ]
+                    },
+                    {
+                        "items": [
+                            9,
+                            0,
+                            42
+                        ]
+                    },
+                    {
+                        "items": [
+                            303,
+                            0,
+                            177
+                        ]
+                    },
+                    {
+                        "items": [
+                            128,
+                            221,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            305,
+                            0,
+                            305
+                        ]
+                    }
+                ]
+            },
+            {
+                "posX": -3,
+                "posY": -10,
+                "cellType": 0,
+                "numberLayer": 0,
+                "moveType": 0,
+                "speed": 0,
+                "isLock": 0,
+                "itemsLayer": [
+                    {
+                        "items": [
+                            268,
+                            203,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            14,
+                            14,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            0,
+                            268,
+                            268
+                        ]
+                    },
+                    {
+                        "items": [
+                            220,
+                            256,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            190,
+                            253,
+                            253
+                        ]
+                    },
+                    {
+                        "items": [
+                            305,
+                            220,
+                            220
+                        ]
+                    }
+                ]
+            },
+            {
+                "posX": -3,
+                "posY": 6,
+                "cellType": 0,
+                "numberLayer": 0,
+                "moveType": 0,
+                "speed": 0,
+                "isLock": 0,
+                "itemsLayer": [
+                    {
+                        "items": [
+                            38,
+                            138,
+                            38
+                        ]
+                    },
+                    {
+                        "items": [
+                            307,
+                            307,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            0,
+                            230,
+                            230
+                        ]
+                    },
+                    {
+                        "items": [
+                            70,
+                            0,
+                            70
+                        ]
+                    },
+                    {
+                        "items": [
+                            9,
+                            9,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            33,
+                            33,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            221,
+                            172,
+                            172
+                        ]
+                    }
+                ]
+            },
+            {
+                "posX": 3,
+                "posY": -6,
+                "cellType": 0,
+                "numberLayer": 0,
+                "moveType": 0,
+                "speed": 0,
+                "isLock": 0,
+                "itemsLayer": [
+                    {
+                        "items": [
+                            120,
+                            120,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            254,
+                            148,
+                            148
+                        ]
+                    },
+                    {
+                        "items": [
+                            20,
+                            0,
+                            31
+                        ]
+                    },
+                    {
+                        "items": [
+                            40,
+                            78,
+                            78
+                        ]
+                    },
+                    {
+                        "items": [
+                            128,
+                            3,
+                            3
+                        ]
+                    },
+                    {
+                        "items": [
+                            303,
+                            147,
+                            190
+                        ]
+                    }
+                ]
+            },
+            {
+                "posX": 3,
+                "posY": 6,
+                "cellType": 0,
+                "numberLayer": 0,
+                "moveType": 0,
+                "speed": 0,
+                "isLock": 1,
+                "itemsLayer": [
+                    {
+                        "items": [
+                            0,
+                            162,
+                            162
+                        ]
+                    },
+                    {
+                        "items": [
+                            61,
+                            61,
+                            216
+                        ]
+                    },
+                    {
+                        "items": [
+                            138,
+                            307,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            0,
+                            1,
+                            1
+                        ]
+                    },
+                    {
+                        "items": [
+                            64,
+                            64,
+                            147
+                        ]
+                    },
+                    {
+                        "items": [
+                            81,
+                            0,
+                            256
+                        ]
+                    },
+                    {
+                        "items": [
+                            0,
+                            0,
+                            178
+                        ]
+                    }
+                ]
+            },
+            {
+                "posX": -9,
+                "posY": -10,
+                "cellType": 0,
+                "numberLayer": 0,
+                "moveType": 0,
+                "speed": 0,
+                "isLock": 1,
+                "itemsLayer": [
+                    {
+                        "items": [
+                            5,
+                            138,
+                            5
+                        ]
+                    },
+                    {
+                        "items": [
+                            216,
+                            78,
+                            216
+                        ]
+                    },
+                    {
+                        "items": [
+                            60,
+                            0,
+                            60
+                        ]
+                    },
+                    {
+                        "items": [
+                            0,
+                            115,
+                            115
+                        ]
+                    },
+                    {
+                        "items": [
+                            113,
+                            16,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            223,
+                            177,
+                            223
+                        ]
+                    },
+                    {
+                        "items": [
+                            0,
+                            178,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "posX": 3,
+                "posY": -10,
+                "cellType": 0,
+                "numberLayer": 0,
+                "moveType": 0,
+                "speed": 0,
+                "isLock": 0,
+                "itemsLayer": [
+                    {
+                        "items": [
+                            0,
+                            84,
+                            84
+                        ]
+                    },
+                    {
+                        "items": [
+                            188,
+                            103,
+                            188
+                        ]
+                    },
+                    {
+                        "items": [
+                            20,
+                            70,
+                            20
+                        ]
+                    },
+                    {
+                        "items": [
+                            40,
+                            0,
+                            40
+                        ]
+                    },
+                    {
+                        "items": [
+                            256,
+                            0,
+                            128
+                        ]
+                    },
+                    {
+                        "items": [
+                            33,
+                            12,
+                            0
+                        ]
+                    },
+                    {
+                        "items": [
+                            167,
+                            167,
+                            0
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
