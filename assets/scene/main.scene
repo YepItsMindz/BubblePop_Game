@@ -22,7 +22,9 @@
     ],
     "_active": true,
     "_components": [],
-    "_prefab": null,
+    "_prefab": {
+      "__id__": 28
+    },
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
@@ -52,7 +54,7 @@
     },
     "autoReleaseAssets": false,
     "_globals": {
-      "__id__": 28
+      "__id__": 29
     },
     "_id": "14c303b4-56cd-4e07-ac2d-47b474728674"
   },
@@ -302,6 +304,10 @@
     "__prefab": null,
     "bubbles": {
       "__uuid__": "890641a1-589c-4f29-97cb-e0a9c0bb79cf",
+      "__expectedType__": "cc.Prefab"
+    },
+    "predictBubbles": {
+      "__uuid__": "3f29a9a2-74dc-41c7-996b-f8684237aafd",
       "__expectedType__": "cc.Prefab"
     },
     "spriteAtlas": {
@@ -971,30 +977,38 @@
     "_id": "c5V1EV8IpMtrIvY1OE9t2u"
   },
   {
+    "__type__": "cc.PrefabInfo",
+    "root": null,
+    "asset": null,
+    "fileId": "14c303b4-56cd-4e07-ac2d-47b474728674",
+    "instance": null,
+    "targetOverrides": null
+  },
+  {
     "__type__": "cc.SceneGlobals",
     "ambient": {
-      "__id__": 29
-    },
-    "shadows": {
       "__id__": 30
     },
-    "_skybox": {
+    "shadows": {
       "__id__": 31
     },
-    "fog": {
+    "_skybox": {
       "__id__": 32
     },
-    "octree": {
+    "fog": {
       "__id__": 33
     },
-    "skin": {
+    "octree": {
       "__id__": 34
     },
-    "lightProbeInfo": {
+    "skin": {
       "__id__": 35
     },
-    "postSettings": {
+    "lightProbeInfo": {
       "__id__": 36
+    },
+    "postSettings": {
+      "__id__": 37
     },
     "bakedWithStationaryMainLight": false,
     "bakedWithHighpLightmap": false

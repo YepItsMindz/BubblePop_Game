@@ -35,6 +35,9 @@ export class main extends Component {
   @property(Prefab)
   bubbles: Prefab = null;
 
+  @property(Prefab)
+  predictBubbles: Prefab = null;
+
   @property(SpriteAtlas)
   spriteAtlas: SpriteAtlas = null;
 
@@ -60,6 +63,7 @@ export class main extends Component {
   public velocity: number = 1500;
   public previewBubble: Node = null;
   public nextBubbleIndex: number = 0;
+  public currentPredictedBubble: Node = null;
 
   protected onLoad(): void {
     this.createMaps();
@@ -70,6 +74,12 @@ export class main extends Component {
     input.on(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
   }
 
+  protected onDestroy(): void {
+    input.off(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
+    input.off(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
+  }
+
+  //Game Initialization
   createMaps() {
     for (let i = 0; i < this.rows; i++) {
       if (i % 2 == 0) {
@@ -77,7 +87,7 @@ export class main extends Component {
           this.createBubbles(i, j);
         }
       } else {
-        for (let j = 0; j < this.cols - 1; j++) {
+        for (let j = 1; j < this.cols; j++) {
           this.createBubbles(i, j);
         }
       }
@@ -87,9 +97,20 @@ export class main extends Component {
   createBubbles(i: number, j: number) {
     const node: Node = instantiate(this.bubbles);
     node.name = node.uuid;
+    let sf = null;
     const randomBallIndex = Math.floor(Math.random() * 3) + 4;
-    const sf = this.spriteAtlas.getSpriteFrame(`ball_${randomBallIndex}`);
-    node.getComponent(bubblesPrefab).setImage(sf);
+    if (i % 2 === 0 && j === 0 && i % 2 === 0 && j === this.cols) {
+      sf = this.spriteAtlas.getSpriteFrame(`ball_0`);
+    } else {
+      sf = this.spriteAtlas.getSpriteFrame(`ball_${randomBallIndex}`);
+    }
+
+    const bubbleComponent = node.getComponent(bubblesPrefab);
+    bubbleComponent.setImage(sf);
+
+    // Store the row and column indices properly in the component
+    bubbleComponent.setGridPosition(i, j);
+
     this.setOriginPos(node, i, j);
     this.node.addChild(node);
     this.bubblesArray.push(node);
@@ -107,29 +128,36 @@ export class main extends Component {
     } else {
       node.setWorldPosition(
         new Vec3(
-          (j - (this.cols - 1) / 2) * BUBBLES_SIZE + BUBBLES_SIZE / 2,
+          (j - (this.cols - 1) / 2) * BUBBLES_SIZE - BUBBLES_SIZE / 2,
           i * BUBBLES_SIZE * 0.85,
           1
         )
       );
+      if (j === 0 || j === this.cols)
+        node.getComponent(bubblesPrefab).bubbles.node.active = false;
     }
   }
 
-  update(deltaTime: number) {
-    // this.node.setPosition(
-    //   new Vec3(
-    //     this.node.getPosition().x,
-    //     this.node.getPosition().y - deltaTime * 20,
-    //     1
-    //   )
-    // );
-  }
-
+  //Input Handling
   onMouseMove(event: EventMouse) {
     this.path.length = 0;
     this.createRayToMouse(event);
+    this.predictedBubble(this.lastCollider);
   }
 
+  onMouseDown(event: EventMouse) {
+    // Create the shooting bubble with the same sprite as preview
+    const bubble: Node = instantiate(this.bubbles);
+    const sf = this.spriteAtlas.getSpriteFrame(`ball_${this.nextBubbleIndex}`);
+    bubble.name = bubble.uuid;
+    bubble.getComponent(bubblesPrefab).setImage(sf);
+    this.bubblesArray.push(bubble);
+    this.node.addChild(bubble);
+    bubble.setWorldPosition(this.startLinePos.getWorldPosition());
+    this.movingBubble(bubble, this.lastCollider);
+  }
+
+  //Preview System
   createPreviewBubble() {
     this.previewBubble = instantiate(this.bubbles);
     this.generateNextBubble();
@@ -143,21 +171,31 @@ export class main extends Component {
     this.previewBubble.getComponent(bubblesPrefab).setImage(sf);
   }
 
-  onMouseDown(event: EventMouse) {
-    // Create the shooting bubble with the same sprite as preview
-    const bubble: Node = instantiate(this.bubbles);
-    const sf = this.spriteAtlas.getSpriteFrame(`ball_${this.nextBubbleIndex}`);
-    bubble.name = bubble.uuid;
-    bubble.getComponent(bubblesPrefab).setImage(sf);
-    this.bubblesArray.push(bubble);
-    this.node.addChild(bubble);
-    bubble.setWorldPosition(this.startLinePos.getWorldPosition());
-    // this.createRayToMouse(event);
-    this.movingBubble(bubble, this.lastCollider);
+  predictedBubble(collider: Node) {
+    if (this.currentPredictedBubble && this.currentPredictedBubble.isValid) {
+      this.currentPredictedBubble.removeFromParent();
+      this.currentPredictedBubble = null;
+    }
 
-    // Check if the shot bubble matches any of the 6 adjacent bubbles around the target
+    let lastPath = this.path[this.path.length - 1];
+    this.bubblesArray.forEach(i => {
+      if (collider === i) {
+        const pos2 = this.newPosition(
+          new Vec2(i.getWorldPosition().x, i.getWorldPosition().y),
+          lastPath
+        );
+        lastPath = new Vec2(pos2.x, pos2.y);
+      }
+    });
+
+    const node: Node = instantiate(this.predictBubbles);
+    this.node.addChild(node);
+    node.setWorldPosition(new Vec3(lastPath.x, lastPath.y, 1));
+
+    this.currentPredictedBubble = node;
   }
 
+  //Bubble Movement & Animation
   movingBubble(bubble: Node, collider: Node) {
     let lastPath = this.path[this.path.length - 1];
     this.bubblesArray.forEach(i => {
@@ -173,25 +211,33 @@ export class main extends Component {
 
     this.animateBubble(bubble);
 
-    const adjacentBubbles = this.getAdjacentBubbles(lastPath);
-    console.log(adjacentBubbles);
-    let hasMatch = false;
+    // Check for matches after the bubble reaches its final position
+    setTimeout(
+      () => {
+        // Set the bubble to its final position to ensure accurate adjacent bubble detection
+        bubble.setWorldPosition(new Vec3(lastPath.x, lastPath.y, 1));
+        const adjacentBubbles = this.getAdjacentBubbles(lastPath);
+        console.log('Adjacent bubbles found:', adjacentBubbles.length);
+        let hasMatch = false;
 
-    adjacentBubbles.forEach(adjacentBubble => {
-      if (this.getSpriteFrame(bubble) == this.getSpriteFrame(adjacentBubble)) {
-        console.log(adjacentBubble.name);
-        hasMatch = true;
-      }
-    });
+        adjacentBubbles.forEach(adjacentBubble => {
+          if (
+            this.getSpriteFrame(bubble) === this.getSpriteFrame(adjacentBubble)
+          ) {
+            console.log('Match found with bubble:', adjacentBubble.name);
+            hasMatch = true;
+          }
+        });
 
-    if (hasMatch) {
-      console.log('Match found - destroying bubbles');
-      setTimeout(() => {
-        this.destroyBubble(bubble);
-      }, this.calculateAnimationTime() * 1000);
-    } else {
-      console.log('No match');
-    }
+        if (hasMatch) {
+          console.log('Match found - destroying bubbles');
+          this.destroyBubble(bubble);
+        } else {
+          console.log('No match - bubble stays in place');
+        }
+      },
+      this.calculateAnimationTime() * 1000 + 50
+    ); // Add small buffer for animation completion
 
     // Generate next bubble for preview
     this.generateNextBubble();
@@ -201,8 +247,6 @@ export class main extends Component {
     if (this.path.length === 0) {
       return;
     }
-
-    //Anim
     let actions = new Tween();
     for (let i = 1; i < this.path.length; i++) {
       actions.to(
@@ -228,6 +272,7 @@ export class main extends Component {
     return totalTime;
   }
 
+  //Graphics
   createLineNode() {
     this.graphics.lineWidth = 3;
     this.graphics.strokeColor = Color.RED;
@@ -238,6 +283,7 @@ export class main extends Component {
     this.graphics.lineTo(endPos.x, endPos.y);
   }
 
+  //Position Calculation
   distance(nodePos: Vec2, point: Vec2): number {
     return Vec2.distance(nodePos, point);
   }
@@ -274,6 +320,7 @@ export class main extends Component {
     return closestPosition;
   }
 
+  //Raycast & Physics
   createRayToMouse(event: EventMouse) {
     this.graphics.clear();
 
@@ -370,107 +417,255 @@ export class main extends Component {
     }
   }
 
+  //Bubble Matching & Destruction
   destroyBubble(bubble: Node) {
-    const matchingBubbles: Node[] = [];
-    const bubbleDistance = BUBBLES_SIZE * 1.5; // Threshold for adjacent bubbles
+    if (!bubble.active) return;
 
-    // Find all matching adjacent bubbles
-    this.bubblesArray.forEach(i => {
-      if (i.active && this.getSpriteFrame(i) == this.getSpriteFrame(bubble)) {
-        const dist = this.distance(
-          new Vec2(i.getWorldPosition().x, i.getWorldPosition().y),
-          new Vec2(bubble.getWorldPosition().x, bubble.getWorldPosition().y)
-        );
-        if (dist > 0 && dist <= bubbleDistance) {
-          matchingBubbles.push(i);
+    const visitedBubbles = new Set<Node>();
+    const bubblesToDestroy: Node[] = [];
+    const spriteFrame = this.getSpriteFrame(bubble);
+
+    this.findConnectedBubbles(
+      bubble,
+      spriteFrame,
+      visitedBubbles,
+      bubblesToDestroy
+    );
+
+    // Only destroy if we have at least 3 connected bubbles (including the shot bubble)
+    if (bubblesToDestroy.length >= 3) {
+      console.log(`Destroying ${bubblesToDestroy.length} connected bubbles`);
+      bubblesToDestroy.forEach(bubbleToDestroy => {
+        if (bubbleToDestroy.active) {
+          bubbleToDestroy.active = false;
         }
-      }
-    });
-    if (bubble.active) bubble.active = false;
+      });
 
-    matchingBubbles.forEach(matchingBubble => {
-      if (matchingBubble.active) {
-        this.destroyBubble(matchingBubble);
-      }
-    });
-
-    this.isFalling();
-  }
-
-  isFalling() {
-    this.bubblesArray.forEach(bubbles => {
-      this.groupBubbles.length = 0;
-      if (bubbles.active) {
-        this.findGroupBubbles(bubbles);
-      }
-    });
-  }
-
-  findGroupBubbles(bubbles: Node) {
-    const isAlreadyInGroup = this.groupBubbles.indexOf(bubbles) !== -1;
-
-    if (!isAlreadyInGroup) {
-      this.groupBubbles.push(bubbles);
-      const bubblesPos = new Vec2(
-        bubbles.getWorldPosition().x,
-        bubbles.getWorldPosition().y
+      this.checkForFallingBubbles();
+    } else {
+      console.log(
+        `Only ${bubblesToDestroy.length} connected bubbles found, not enough to destroy`
       );
-      const adjacent = this.getAdjacentBubbles(bubblesPos);
-      for (let adj of adjacent) {
-        if (adj.active) this.findGroupBubbles(adj);
-      }
     }
   }
 
-  isTopBubbles(bubble: Node) {}
+  findConnectedBubbles(
+    bubble: Node,
+    targetSpriteFrame: any,
+    visited: Set<Node>,
+    result: Node[]
+  ) {
+    if (!bubble.active || visited.has(bubble)) {
+      return;
+    }
+
+    if (this.getSpriteFrame(bubble) !== targetSpriteFrame) {
+      return;
+    }
+
+    visited.add(bubble);
+    result.push(bubble);
+
+    const bubblePos = new Vec2(
+      bubble.getWorldPosition().x,
+      bubble.getWorldPosition().y
+    );
+    const adjacentBubbles = this.getAdjacentBubbles(bubblePos);
+
+    adjacentBubbles.forEach(adjacentBubble => {
+      this.findConnectedBubbles(
+        adjacentBubble,
+        targetSpriteFrame,
+        visited,
+        result
+      );
+    });
+  }
 
   getSpriteFrame(node: Node) {
     return node.getComponent(bubblesPrefab).bubbles.spriteFrame;
   }
 
-  getAdjacentBubbles(centerPos: Vec2): Node[] {
-    const adjacentBubbles: Node[] = [];
-    const adjacentPositions = [
-      new Vec2(
-        centerPos.x + BUBBLES_SIZE / 2,
-        centerPos.y - BUBBLES_SIZE * 0.85
-      ),
-      new Vec2(centerPos.x + BUBBLES_SIZE, centerPos.y),
-      new Vec2(
-        centerPos.x + BUBBLES_SIZE / 2,
-        centerPos.y + BUBBLES_SIZE * 0.85
-      ),
-      new Vec2(
-        centerPos.x - BUBBLES_SIZE / 2,
-        centerPos.y - BUBBLES_SIZE * 0.85
-      ),
-      new Vec2(centerPos.x - BUBBLES_SIZE, centerPos.y),
-      new Vec2(
-        centerPos.x - BUBBLES_SIZE / 2,
-        centerPos.y + BUBBLES_SIZE * 0.85
-      ),
-    ];
+  // Falling Bubble
+  checkForFallingBubbles() {
+    // First check if the original top row (row 14) still has any active visible bubbles
+    let hasTopRowBubbles = false;
+    this.bubblesArray.forEach(bubble => {
+      if (bubble.active) {
+        const bubbleComponent = bubble.getComponent(bubblesPrefab);
+        if (
+          bubbleComponent &&
+          bubbleComponent.getRowIndex() === this.rows - 1 &&
+          bubbleComponent.isVisibleBubble()
+        ) {
+          hasTopRowBubbles = true;
+        }
+      }
+    });
 
-    adjacentPositions.forEach(pos => {
+    // If the top row has no visible bubbles, ALL remaining visible bubbles should fall
+    if (!hasTopRowBubbles) {
+      const allRemainingBubbles: Node[] = [];
       this.bubblesArray.forEach(bubble => {
-        if (bubble.active == true) {
-          const bubblePos = new Vec2(
-            bubble.getWorldPosition().x,
-            bubble.getWorldPosition().y
-          );
-          const distance = this.distance(bubblePos, pos);
-          if (distance < BUBBLES_SIZE * 0.3) {
-            adjacentBubbles.push(bubble);
+        if (bubble.active) {
+          const bubbleComponent = bubble.getComponent(bubblesPrefab);
+          // Only include visible bubbles for falling
+          if (!bubbleComponent || bubbleComponent.isVisibleBubble()) {
+            allRemainingBubbles.push(bubble);
           }
         }
       });
+
+      if (allRemainingBubbles.length > 0) {
+        console.log(
+          `Top row is empty! Making all ${allRemainingBubbles.length} remaining bubbles fall`
+        );
+        this.animateFallingBubbles(allRemainingBubbles);
+      }
+      return; // Early return since all bubbles are falling
+    }
+
+    // Original logic for when top row still exists
+    const connectedToTop = new Set<Node>();
+    const visited = new Set<Node>();
+
+    // Find all bubbles connected to the top row (row 14)
+    this.bubblesArray.forEach(bubble => {
+      if (bubble.active && this.isTopRowBubble(bubble)) {
+        this.findAllConnectedBubbles(bubble, visited, connectedToTop);
+      }
+    });
+
+    // Find bubbles that are not connected to the top
+    const fallingBubbles: Node[] = [];
+    this.bubblesArray.forEach(bubble => {
+      if (bubble.active && !connectedToTop.has(bubble)) {
+        const bubbleComponent = bubble.getComponent(bubblesPrefab);
+        // Only include visible bubbles for falling
+        if (!bubbleComponent || bubbleComponent.isVisibleBubble()) {
+          fallingBubbles.push(bubble);
+        }
+      }
+    });
+
+    // Make the disconnected bubbles fall
+    if (fallingBubbles.length > 0) {
+      console.log(
+        `Making ${fallingBubbles.length} bubbles fall (disconnected from top)`
+      );
+      this.animateFallingBubbles(fallingBubbles);
+    }
+  }
+
+  isTopRowBubble(bubble: Node): boolean {
+    if (!bubble.active) return false;
+
+    // For bubbles created in the grid, use the stored row index from component
+    const bubbleComponent = bubble.getComponent(bubblesPrefab);
+    if (bubbleComponent && bubbleComponent.isGridBubble()) {
+      return bubbleComponent.getRowIndex() === this.rows - 1; // Top row is row 14 (this.rows - 1)
+    }
+
+    // For shot bubbles that don't have grid position, compare with actual top row positions
+    const bubbleY = bubble.getWorldPosition().y;
+
+    // Find any bubble that we know is in the top row and use its Y position
+    for (const b of this.bubblesArray) {
+      if (b.active) {
+        const bComponent = b.getComponent(bubblesPrefab);
+        if (bComponent && bComponent.getRowIndex() === this.rows - 1) {
+          const topRowY = b.getWorldPosition().y;
+          return Math.abs(bubbleY - topRowY) < BUBBLES_SIZE * 0.5;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  findAllConnectedBubbles(bubble: Node, visited: Set<Node>, result: Set<Node>) {
+    if (!bubble.active || visited.has(bubble)) {
+      return;
+    }
+
+    visited.add(bubble);
+    result.add(bubble);
+
+    // Get adjacent bubbles and recursively check them
+    const bubblePos = new Vec2(
+      bubble.getWorldPosition().x,
+      bubble.getWorldPosition().y
+    );
+    const adjacentBubbles = this.getAdjacentBubbles(bubblePos);
+
+    adjacentBubbles.forEach(adjacentBubble => {
+      this.findAllConnectedBubbles(adjacentBubble, visited, result);
+    });
+  }
+
+  animateFallingBubbles(fallingBubbles: Node[]) {
+    fallingBubbles.forEach((bubble, index) => {
+      // Add a small delay for each bubble to create a cascading effect
+      const delay = index * 0.1;
+
+      // Add some random horizontal movement for more realistic falling
+      const randomOffsetX = (Math.random() - 0.5) * 100;
+      const randomRotation = (Math.random() - 0.5) * 720; // Random rotation up to 2 full turns
+
+      // Animate the bubble falling down with rotation and slight horizontal movement
+      tween(bubble)
+        .delay(delay)
+        .parallel(
+          tween().to(1.5, {
+            worldPosition: new Vec3(
+              bubble.getWorldPosition().x + randomOffsetX,
+              bubble.getWorldPosition().y - this.screenSize.height - 200,
+              bubble.getWorldPosition().z
+            ),
+          }),
+          tween().to(1.5, {
+            eulerAngles: new Vec3(0, 0, randomRotation),
+          })
+        )
+        .call(() => {
+          // Remove the bubble after it falls
+          bubble.active = false;
+          console.log('Bubble fell and was removed');
+        })
+        .start();
+    });
+  }
+
+  //Adjacent Bubble Detection
+  getAdjacentBubbles(centerPos: Vec2): Node[] {
+    const adjacentBubbles: Node[] = [];
+
+    // Check all active bubbles to see if they're adjacent
+    this.bubblesArray.forEach(bubble => {
+      if (bubble.active) {
+        const bubblePos = new Vec2(
+          bubble.getWorldPosition().x,
+          bubble.getWorldPosition().y
+        );
+        const distance = this.distance(bubblePos, centerPos);
+
+        // A bubble is adjacent if it's within approximately one bubble size distance
+        if (distance > 0 && distance <= BUBBLES_SIZE * 1.2) {
+          adjacentBubbles.push(bubble);
+        }
+      }
     });
 
     return adjacentBubbles;
   }
 
-  protected onDestroy(): void {
-    input.off(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
-    input.off(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
+  update(deltaTime: number) {
+    // this.node.setPosition(
+    //   new Vec3(
+    //     this.node.getPosition().x,
+    //     this.node.getPosition().y - deltaTime * 20,
+    //     1
+    //   )
+    // );
   }
 }
