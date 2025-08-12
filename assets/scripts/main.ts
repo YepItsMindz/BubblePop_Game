@@ -29,6 +29,7 @@ import {
 const { ccclass, property } = _decorator;
 
 export const BUBBLES_SIZE = 68;
+export const MAP_FALL_SPEED = 20; // Units per second
 
 import { bubblesPrefab } from './prefab/bubblesPrefab';
 import { PreviewBubble } from './previewBubble';
@@ -284,14 +285,33 @@ export class main extends Component {
       }
     }
 
+    // Store the original path position
     this.path[this.path.length - 1] = lastPath;
+
+    // Calculate animation time based on current path
+    const animationTime = this.calculateAnimationTime();
+    const mapMovementDuringFlight = this.isMovingToMinLine
+      ? 0
+      : animationTime * MAP_FALL_SPEED;
+
+    // Adjust the final position to compensate for map movement
+    const compensatedPath = new Vec2(
+      lastPath.x,
+      lastPath.y - mapMovementDuringFlight
+    );
+
+    // Update the path with compensated position for the animation
+    this.path[this.path.length - 1] = compensatedPath;
+
     this.animateBubble(bubble);
 
     // Check for matches after the bubble reaches its final position
     setTimeout(
       () => {
         // Set the bubble to its final position to ensure accurate adjacent bubble detection
-        bubble.setWorldPosition(new Vec3(lastPath.x, lastPath.y, 1));
+        bubble.setWorldPosition(
+          new Vec3(compensatedPath.x, compensatedPath.y, 1)
+        );
 
         // Remove from shot bubbles set since it has now settled
         this.shotBubbles.delete(bubble);
@@ -305,7 +325,7 @@ export class main extends Component {
           }
         }
 
-        const adjacentBubbles = this.getAdjacentBubbles(lastPath);
+        const adjacentBubbles = this.getAdjacentBubbles(compensatedPath);
         console.log('Adjacent bubbles found:', adjacentBubbles.length);
         let hasMatch = false;
 
@@ -538,6 +558,12 @@ export class main extends Component {
       console.log(`Destroying ${bubblesToDestroy.length} connected bubbles`);
       bubblesToDestroy.forEach(bubbleToDestroy => {
         if (bubbleToDestroy.active) {
+          // Disable collider before destroying
+          const bubbleComponent = bubbleToDestroy.getComponent(bubblesPrefab);
+          if (bubbleComponent) {
+            bubbleComponent.disableCollider();
+          }
+
           bubbleToDestroy.active = false;
           // Clean up from shot bubbles set if it was a shot bubble
           this.shotBubbles.delete(bubbleToDestroy);
@@ -713,6 +739,12 @@ export class main extends Component {
       // Mark bubble as falling
       this.fallingBubbles.add(bubble);
 
+      // Disable the collider for falling bubbles
+      const bubbleComponent = bubble.getComponent(bubblesPrefab);
+      if (bubbleComponent) {
+        bubbleComponent.disableCollider();
+      }
+
       // Add a small delay for each bubble to create a cascading effect
       const delay = index * 0.1;
 
@@ -874,7 +906,7 @@ export class main extends Component {
       this.node.setPosition(
         new Vec3(
           this.node.getPosition().x,
-          this.node.getPosition().y - deltaTime * 5,
+          this.node.getPosition().y - deltaTime * MAP_FALL_SPEED,
           1
         )
       );

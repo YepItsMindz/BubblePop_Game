@@ -1,4 +1,11 @@
-import { _decorator, Component, Node, Sprite, SpriteFrame } from 'cc';
+import {
+  _decorator,
+  Component,
+  Node,
+  Sprite,
+  SpriteFrame,
+  Collider2D,
+} from 'cc';
 const { ccclass, property } = _decorator;
 
 @ccclass('bubblesPrefab')
@@ -39,6 +46,24 @@ export class bubblesPrefab extends Component {
 
   isVisibleBubble(): boolean {
     return !this.isInvisible;
+  }
+
+  // Disable the collider when bubble is falling
+  disableCollider() {
+    const collider = this.node.getComponent(Collider2D);
+    if (collider) {
+      collider.enabled = false;
+      console.log('Bubble collider disabled for falling bubble');
+    }
+  }
+
+  // Enable the collider (in case needed for reuse)
+  enableCollider() {
+    const collider = this.node.getComponent(Collider2D);
+    if (collider) {
+      collider.enabled = true;
+      console.log('Bubble collider enabled');
+    }
   }
 
   update(deltaTime: number) {}
