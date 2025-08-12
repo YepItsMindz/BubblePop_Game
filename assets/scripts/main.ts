@@ -24,12 +24,14 @@ import {
   PhysicsSystem2D,
   ERaycast2DType,
   Tween,
+  EPhysics2DDrawFlags,
 } from 'cc';
 const { ccclass, property } = _decorator;
 
 export const BUBBLES_SIZE = 68;
 
 import { bubblesPrefab } from './prefab/bubblesPrefab';
+import { PreviewBubble } from './previewBubble';
 @ccclass('main')
 export class main extends Component {
   @property(Prefab)
@@ -53,7 +55,10 @@ export class main extends Component {
   @property(Node)
   rightWall: Node = null;
 
-  public rows: number = 15;
+  @property(PreviewBubble)
+  previewBubbleComponent: PreviewBubble = null;
+
+  public rows: number = 50;
   public cols: number = 13;
   public bubblesArray: Node[] = [];
   public groupBubbles: Node[] = [];
@@ -61,14 +66,16 @@ export class main extends Component {
   public screenSize = view.getVisibleSize();
   public lastCollider: Node = null;
   public velocity: number = 1500;
-  public previewBubble: Node = null;
-  public nextBubbleIndex: number = 0;
   public currentPredictedBubble: Node = null;
 
   protected onLoad(): void {
     this.createMaps();
     this.createLineNode();
-    this.createPreviewBubble();
+
+    // Initialize preview bubble component
+    if (this.previewBubbleComponent) {
+      this.previewBubbleComponent.createPreviewBubble();
+    } //PhysicsSystem2D.instance.debugDrawFlags = EPhysics2DDrawFlags.Shape;
 
     input.on(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
     input.on(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
@@ -148,29 +155,23 @@ export class main extends Component {
   onMouseDown(event: EventMouse) {
     // Create the shooting bubble with the same sprite as preview
     const bubble: Node = instantiate(this.bubbles);
-    const sf = this.spriteAtlas.getSpriteFrame(`ball_${this.nextBubbleIndex}`);
+    const nextIndex = this.previewBubbleComponent
+      ? this.previewBubbleComponent.nextBubbleIndex
+      : 4;
+    const sf = this.spriteAtlas.getSpriteFrame(`ball_${nextIndex}`);
     bubble.name = bubble.uuid;
     bubble.getComponent(bubblesPrefab).setImage(sf);
     this.bubblesArray.push(bubble);
     this.node.addChild(bubble);
     bubble.setWorldPosition(this.startLinePos.getWorldPosition());
+    console.log(
+      bubble.getComponent(bubblesPrefab).rowIndex,
+      bubble.getComponent(bubblesPrefab).colIndex
+    );
     this.movingBubble(bubble, this.lastCollider);
   }
 
   //Preview System
-  createPreviewBubble() {
-    this.previewBubble = instantiate(this.bubbles);
-    this.generateNextBubble();
-    this.node.addChild(this.previewBubble);
-    this.previewBubble.setWorldPosition(this.startLinePos.getWorldPosition());
-  }
-
-  generateNextBubble() {
-    this.nextBubbleIndex = Math.floor(Math.random() * 3) + 4;
-    const sf = this.spriteAtlas.getSpriteFrame(`ball_${this.nextBubbleIndex}`);
-    this.previewBubble.getComponent(bubblesPrefab).setImage(sf);
-  }
-
   predictedBubble(collider: Node) {
     if (this.currentPredictedBubble && this.currentPredictedBubble.isValid) {
       this.currentPredictedBubble.removeFromParent();
@@ -207,8 +208,32 @@ export class main extends Component {
         lastPath = new Vec2(pos2.x, pos2.y);
       }
     });
-    this.path[this.path.length - 1] = lastPath;
 
+    //Special Case
+    if (lastPath.x < 0) lastPath.x += BUBBLES_SIZE;
+    if (lastPath.x > view.getVisibleSize().x) lastPath.x -= BUBBLES_SIZE;
+
+    const isOccupied = this.bubblesArray.some(bubble => {
+      if (!bubble.active) return false;
+      const bubblePos = new Vec2(
+        bubble.getWorldPosition().x,
+        bubble.getWorldPosition().y
+      );
+      return Vec2.distance(bubblePos, lastPath) < BUBBLES_SIZE * 0.5;
+    });
+
+    if (isOccupied) {
+      if (lastPath.x - BUBBLES_SIZE < 0) {
+        lastPath.x -= BUBBLES_SIZE / 2;
+        lastPath.y -= BUBBLES_SIZE * 0.85;
+      }
+      if (lastPath.x + BUBBLES_SIZE > view.getVisibleSize().x) {
+        lastPath.x += BUBBLES_SIZE / 2;
+        lastPath.y -= BUBBLES_SIZE * 0.85;
+      }
+    }
+
+    this.path[this.path.length - 1] = lastPath;
     this.animateBubble(bubble);
 
     // Check for matches after the bubble reaches its final position
@@ -240,7 +265,9 @@ export class main extends Component {
     ); // Add small buffer for animation completion
 
     // Generate next bubble for preview
-    this.generateNextBubble();
+    if (this.previewBubbleComponent) {
+      this.previewBubbleComponent.generateNextBubble();
+    }
   }
 
   animateBubble(bubble: Node) {
@@ -660,12 +687,12 @@ export class main extends Component {
   }
 
   update(deltaTime: number) {
-    // this.node.setPosition(
-    //   new Vec3(
-    //     this.node.getPosition().x,
-    //     this.node.getPosition().y - deltaTime * 20,
-    //     1
-    //   )
-    // );
+    this.node.setPosition(
+      new Vec3(
+        this.node.getPosition().x,
+        this.node.getPosition().y - deltaTime * 5,
+        1
+      )
+    );
   }
 }
