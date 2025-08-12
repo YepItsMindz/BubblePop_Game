@@ -47,6 +47,7 @@ export class main extends Component {
   graphics: Graphics = null;
 
   @property(Node)
+  @property(Node)
   startLinePos: Node = null;
 
   @property(Node)
@@ -58,6 +59,12 @@ export class main extends Component {
   @property(PreviewBubble)
   previewBubbleComponent: PreviewBubble = null;
 
+  @property(Node)
+  endLine: Node = null;
+
+  @property(Node)
+  minLine: Node = null;
+
   public rows: number = 50;
   public cols: number = 13;
   public bubblesArray: Node[] = [];
@@ -67,6 +74,12 @@ export class main extends Component {
   public lastCollider: Node = null;
   public velocity: number = 1500;
   public currentPredictedBubble: Node = null;
+
+  // Game state variables
+  public gameActive: boolean = true;
+  public isMovingToMinLine: boolean = false;
+  public shotBubbles: Set<Node> = new Set(); // Track bubbles that were shot
+  public fallingBubbles: Set<Node> = new Set(); // Track bubbles that are falling
 
   protected onLoad(): void {
     this.createMaps();
@@ -84,11 +97,20 @@ export class main extends Component {
   protected onDestroy(): void {
     input.off(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
     input.off(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
+
+    // Stop all tweens when destroying
+    Tween.stopAll();
+
+    // Clear shot bubbles set
+    this.shotBubbles.clear();
+
+    // Clear falling bubbles set
+    this.fallingBubbles.clear();
   }
 
   //Game Initialization
   createMaps() {
-    for (let i = 0; i < this.rows; i++) {
+    for (let i = 10; i < this.rows + 10; i++) {
       if (i % 2 == 0) {
         for (let j = 0; j < this.cols; j++) {
           this.createBubbles(i, j);
@@ -99,6 +121,29 @@ export class main extends Component {
         }
       }
     }
+  }
+
+  // Method to add new rows to the map
+  addNewRows(numRows: number) {
+    console.log(`Adding ${numRows} new rows to the map`);
+
+    // Create new rows at the top (higher row indices)
+    const startRow = this.rows + 10; // Start after current highest row
+
+    for (let i = startRow; i < startRow + numRows; i++) {
+      if (i % 2 == 0) {
+        for (let j = 0; j < this.cols; j++) {
+          this.createBubbles(i, j);
+        }
+      } else {
+        for (let j = 1; j < this.cols; j++) {
+          this.createBubbles(i, j);
+        }
+      }
+    }
+
+    // Update the rows count
+    this.rows += numRows;
   }
 
   createBubbles(i: number, j: number) {
@@ -153,6 +198,8 @@ export class main extends Component {
   }
 
   onMouseDown(event: EventMouse) {
+    if (!this.gameActive) return; // Don't allow shooting if game is over
+
     // Create the shooting bubble with the same sprite as preview
     const bubble: Node = instantiate(this.bubbles);
     const nextIndex = this.previewBubbleComponent
@@ -161,6 +208,10 @@ export class main extends Component {
     const sf = this.spriteAtlas.getSpriteFrame(`ball_${nextIndex}`);
     bubble.name = bubble.uuid;
     bubble.getComponent(bubblesPrefab).setImage(sf);
+
+    // Mark this bubble as a shot bubble
+    this.shotBubbles.add(bubble);
+
     this.bubblesArray.push(bubble);
     this.node.addChild(bubble);
     bubble.setWorldPosition(this.startLinePos.getWorldPosition());
@@ -241,6 +292,19 @@ export class main extends Component {
       () => {
         // Set the bubble to its final position to ensure accurate adjacent bubble detection
         bubble.setWorldPosition(new Vec3(lastPath.x, lastPath.y, 1));
+
+        // Remove from shot bubbles set since it has now settled
+        this.shotBubbles.delete(bubble);
+
+        // Check if the collider is at row 10 and add new rows if so
+        if (collider) {
+          const colliderComponent = collider.getComponent(bubblesPrefab);
+          if (colliderComponent && colliderComponent.getRowIndex() === 10) {
+            console.log('Collider at row 10 detected! Adding 10 new rows.');
+            this.addNewRows(10);
+          }
+        }
+
         const adjacentBubbles = this.getAdjacentBubbles(lastPath);
         console.log('Adjacent bubbles found:', adjacentBubbles.length);
         let hasMatch = false;
@@ -376,6 +440,11 @@ export class main extends Component {
       ERaycast2DType.Closest
     );
 
+    // Check if raycast hit anything
+    if (results.length === 0) {
+      return; // No collision detected, exit early
+    }
+
     const collider = results[0].collider;
     const point = results[0].point;
     // const normal = results[0].normal;
@@ -419,6 +488,11 @@ export class main extends Component {
       endPoint,
       ERaycast2DType.Closest
     );
+
+    // Check if raycast hit anything
+    if (results.length === 0) {
+      return; // No collision detected, exit early
+    }
 
     const collider = results[0].collider;
     const point = results[0].point;
@@ -465,6 +539,10 @@ export class main extends Component {
       bubblesToDestroy.forEach(bubbleToDestroy => {
         if (bubbleToDestroy.active) {
           bubbleToDestroy.active = false;
+          // Clean up from shot bubbles set if it was a shot bubble
+          this.shotBubbles.delete(bubbleToDestroy);
+          // Clean up from falling bubbles set if it was a falling bubble
+          this.fallingBubbles.delete(bubbleToDestroy);
         }
       });
 
@@ -632,6 +710,9 @@ export class main extends Component {
 
   animateFallingBubbles(fallingBubbles: Node[]) {
     fallingBubbles.forEach((bubble, index) => {
+      // Mark bubble as falling
+      this.fallingBubbles.add(bubble);
+
       // Add a small delay for each bubble to create a cascading effect
       const delay = index * 0.1;
 
@@ -657,6 +738,10 @@ export class main extends Component {
         .call(() => {
           // Remove the bubble after it falls
           bubble.active = false;
+          // Clean up from shot bubbles set if it was a shot bubble
+          this.shotBubbles.delete(bubble);
+          // Clean up from falling bubbles set
+          this.fallingBubbles.delete(bubble);
           console.log('Bubble fell and was removed');
         })
         .start();
@@ -686,13 +771,125 @@ export class main extends Component {
     return adjacentBubbles;
   }
 
+  // Find minimum Y position of bubbles (excluding shot bubbles and falling bubbles)
+  getMinBubblePosition(): number {
+    let minY = Infinity;
+
+    this.bubblesArray.forEach(bubble => {
+      if (
+        bubble.active &&
+        !this.shotBubbles.has(bubble) &&
+        !this.fallingBubbles.has(bubble)
+      ) {
+        const bubbleComponent = bubble.getComponent(bubblesPrefab);
+        // Only consider grid bubbles (not shot bubbles or falling bubbles)
+        if (bubbleComponent && bubbleComponent.isGridBubble()) {
+          const bubbleY = bubble.getWorldPosition().y;
+          if (bubbleY < minY) {
+            minY = bubbleY;
+          }
+        }
+      }
+    });
+
+    return minY === Infinity ? 0 : minY;
+  }
+
+  // Move map smoothly to align min position with min line
+  moveMapToMinLine() {
+    if (this.isMovingToMinLine || !this.gameActive) return;
+
+    const minBubbleY = this.getMinBubblePosition();
+    const minLineY = this.minLine.getWorldPosition().y;
+    const currentMapY = this.node.getPosition().y;
+
+    // Calculate how much we need to move the map
+    const targetMapY = currentMapY + (minLineY - minBubbleY);
+
+    this.isMovingToMinLine = true;
+
+    // Animate map movement over 1 second
+    tween(this.node)
+      .to(1.0, {
+        position: new Vec3(
+          this.node.getPosition().x,
+          targetMapY,
+          this.node.getPosition().z
+        ),
+      })
+      .call(() => {
+        this.isMovingToMinLine = false;
+      })
+      .start();
+  }
+
+  // Check if game should end
+  checkGameEnd() {
+    if (!this.gameActive) return;
+
+    const minBubbleY = this.getMinBubblePosition();
+    const endLineY = this.endLine.getWorldPosition().y;
+
+    // Check if minimum bubble position is below the end line
+    if (minBubbleY < endLineY) {
+      this.endGame();
+    }
+  }
+
+  // End the game
+  endGame() {
+    this.gameActive = false;
+    console.log('Game Over! Bubbles reached the end line.');
+
+    // Pause all tweens and animations
+    Tween.stopAll();
+
+    // Disable input
+    input.off(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
+    input.off(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
+
+    // You can add more game over logic here (show game over UI, etc.)
+  }
+
+  // Restart the game
+  restartGame() {
+    this.gameActive = true;
+    this.isMovingToMinLine = false;
+    this.shotBubbles.clear();
+    this.fallingBubbles.clear();
+
+    // Re-enable input
+    input.on(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
+    input.on(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
+
+    console.log('Game restarted!');
+  }
+
   update(deltaTime: number) {
-    this.node.setPosition(
-      new Vec3(
-        this.node.getPosition().x,
-        this.node.getPosition().y - deltaTime * 5,
-        1
-      )
-    );
+    if (!this.gameActive) return;
+
+    // Only move map naturally if not currently moving to min line
+    if (!this.isMovingToMinLine) {
+      // Natural downward movement
+      this.node.setPosition(
+        new Vec3(
+          this.node.getPosition().x,
+          this.node.getPosition().y - deltaTime * 5,
+          1
+        )
+      );
+
+      // Check conditions
+      const minBubbleY = this.getMinBubblePosition();
+      const minLineY = this.minLine.getWorldPosition().y;
+
+      // If min bubble position is above min line, move map to align
+      if (minBubbleY > minLineY) {
+        this.moveMapToMinLine();
+      }
+
+      // Check for game end condition
+      this.checkGameEnd();
+    }
   }
 }
