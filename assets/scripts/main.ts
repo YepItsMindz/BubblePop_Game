@@ -69,7 +69,7 @@ export class main extends Component {
   @property(Node)
   minLine: Node = null;
 
-  public rows: number = 50;
+  public rows: number = 100;
   public cols: number = 13;
   public bubblesArray: Node[] = [];
   public groupBubbles: Node[] = [];
@@ -82,17 +82,18 @@ export class main extends Component {
   // Game state variables
   public gameActive: boolean = true;
   public isMovingToMinLine: boolean = false;
-  public shotBubbles: Set<Node> = new Set(); // Track bubbles that were shot
-  public fallingBubbles: Set<Node> = new Set(); // Track bubbles that are falling
+  public shotBubbles: Set<Node> = new Set();
+  public fallingBubbles: Set<Node> = new Set();
+  public rowCounter: number = 0;
+  public clickCooldown: boolean = false;
 
   protected onLoad(): void {
     this.createMaps();
     this.createLineNode();
 
-    // Initialize preview bubble component
     if (this.previewBubbleComponent) {
       this.previewBubbleComponent.createPreviewBubble();
-    } //PhysicsSystem2D.instance.debugDrawFlags = EPhysics2DDrawFlags.Shape;
+    }
 
     input.on(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
     input.on(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
@@ -102,17 +103,12 @@ export class main extends Component {
     input.off(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
     input.off(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
 
-    // Stop all tweens when destroying
     Tween.stopAll();
-
-    // Clear shot bubbles set
     this.shotBubbles.clear();
-
-    // Clear falling bubbles set
     this.fallingBubbles.clear();
   }
 
-  //Game Initialization
+  // Game Initialization
   createMaps() {
     for (let i = 10; i < this.rows + 10; i++) {
       if (i % 2 == 0) {
@@ -127,26 +123,51 @@ export class main extends Component {
     }
   }
 
-  // Method to add new rows to the map
-  addNewRows(numRows: number) {
-    console.log(`Adding ${numRows} new rows to the map`);
+  addNewRowsEfficient(numRows: number) {
+    console.log(`Adding ${numRows} new rows to the map efficiently`);
 
-    // Create new rows at the top (higher row indices)
-    const startRow = this.rows + 10; // Start after current highest row
+    const newBubbles: Node[] = [];
+    const startRow = this.rows + 10;
 
     for (let i = startRow; i < startRow + numRows; i++) {
       if (i % 2 == 0) {
         for (let j = 0; j < this.cols; j++) {
-          this.createBubbles(i, j);
+          const node: Node = instantiate(this.bubbles);
+          node.name = node.uuid;
+          const randomBallIndex = Math.floor(Math.random() * 3) + 4;
+          const sf = this.spriteAtlas.getSpriteFrame(`ball_${randomBallIndex}`);
+
+          const bubbleComponent = node.getComponent(bubblesPrefab);
+          bubbleComponent.setImage(sf);
+          bubbleComponent.setGridPosition(i, j);
+
+          this.setOriginPos(node, i, j);
+          newBubbles.push(node);
         }
       } else {
         for (let j = 1; j < this.cols; j++) {
-          this.createBubbles(i, j);
+          const node: Node = instantiate(this.bubbles);
+          node.name = node.uuid;
+          const randomBallIndex = Math.floor(Math.random() * 3) + 4;
+          const sf = this.spriteAtlas.getSpriteFrame(`ball_${randomBallIndex}`);
+
+          const bubbleComponent = node.getComponent(bubblesPrefab);
+          bubbleComponent.setImage(sf);
+          bubbleComponent.setGridPosition(i, j);
+
+          this.setOriginPos(node, i, j);
+          if (j === 0 || j === this.cols)
+            bubbleComponent.bubbles.node.active = false;
+          newBubbles.push(node);
         }
       }
     }
 
-    // Update the rows count
+    newBubbles.forEach(bubble => {
+      this.node.addChild(bubble);
+      this.bubblesArray.push(bubble);
+    });
+
     this.rows += numRows;
   }
 
@@ -163,8 +184,6 @@ export class main extends Component {
 
     const bubbleComponent = node.getComponent(bubblesPrefab);
     bubbleComponent.setImage(sf);
-
-    // Store the row and column indices properly in the component
     bubbleComponent.setGridPosition(i, j);
 
     this.setOriginPos(node, i, j);
@@ -194,7 +213,7 @@ export class main extends Component {
     }
   }
 
-  //Input Handling
+  // Input Handling
   onMouseMove(event: EventMouse) {
     this.path.length = 0;
     this.createRayToMouse(event);
@@ -202,9 +221,18 @@ export class main extends Component {
   }
 
   onMouseDown(event: EventMouse) {
-    if (!this.gameActive) return; // Don't allow shooting if game is over
+    if (!this.gameActive || this.clickCooldown) return;
 
-    // Create the shooting bubble with the same sprite as preview
+    // Update raycast and prediction before shooting
+    this.path.length = 0;
+    this.createRayToMouse(event);
+    this.predictedBubble(this.lastCollider);
+
+    this.clickCooldown = true;
+    setTimeout(() => {
+      this.clickCooldown = false;
+    }, 500);
+
     const bubble: Node = instantiate(this.bubbles);
     const nextIndex = this.previewBubbleComponent
       ? this.previewBubbleComponent.nextBubbleIndex
@@ -213,7 +241,6 @@ export class main extends Component {
     bubble.name = bubble.uuid;
     bubble.getComponent(bubblesPrefab).setImage(sf);
 
-    // Mark this bubble as a shot bubble
     this.shotBubbles.add(bubble);
 
     this.bubblesArray.push(bubble);
@@ -222,7 +249,7 @@ export class main extends Component {
     this.movingBubble(bubble, this.lastCollider);
   }
 
-  //Preview System
+  // Preview System
   predictedBubble(collider: Node) {
     if (this.currentPredictedBubble && this.currentPredictedBubble.isValid) {
       this.currentPredictedBubble.removeFromParent();
@@ -247,7 +274,7 @@ export class main extends Component {
     this.currentPredictedBubble = node;
   }
 
-  //Bubble Movement & Animation
+  // Bubble Movement & Animation
   movingBubble(bubble: Node, collider: Node) {
     let lastPath = this.path[this.path.length - 1];
     this.bubblesArray.forEach(i => {
@@ -260,7 +287,7 @@ export class main extends Component {
       }
     });
 
-    //Special Case
+    // Special Case
     if (lastPath.x < 0) lastPath.x += BUBBLES_SIZE;
     if (lastPath.x > view.getVisibleSize().x) lastPath.x -= BUBBLES_SIZE;
 
@@ -284,22 +311,18 @@ export class main extends Component {
       }
     }
 
-    // Store the original path position
     this.path[this.path.length - 1] = lastPath;
 
-    // Calculate animation time based on current path
     const animationTime = this.calculateAnimationTime();
     const mapMovementDuringFlight = this.isMovingToMinLine
       ? 0
       : animationTime * MAP_FALL_SPEED;
 
-    // Adjust the final position to compensate for map movement
     const compensatedPath = new Vec2(
       lastPath.x,
       lastPath.y - mapMovementDuringFlight
     );
 
-    // Update the path with compensated position for the animation
     this.path[this.path.length - 1] = compensatedPath;
 
     this.animateBubble(bubble);
@@ -315,13 +338,11 @@ export class main extends Component {
         // Remove from shot bubbles set since it has now settled
         this.shotBubbles.delete(bubble);
 
-        // Check if the collider is at row 10 and add new rows if so
-        if (collider) {
-          const colliderComponent = collider.getComponent(bubblesPrefab);
-          if (colliderComponent && colliderComponent.getRowIndex() === 10) {
-            console.log('Collider at row 10 detected! Adding 10 new rows.');
-            this.addNewRows(10);
-          }
+        // Increment row counter and add rows when counter > 50
+        this.rowCounter++;
+        if (this.rowCounter > 50) {
+          this.addNewRowsEfficient(50);
+          this.rowCounter = 0;
         }
 
         const adjacentBubbles = this.getAdjacentBubbles(compensatedPath);
@@ -345,9 +366,8 @@ export class main extends Component {
         }
       },
       this.calculateAnimationTime() * 1000 + 50
-    ); // Add small buffer for animation completion
+    );
 
-    // Generate next bubble for preview
     if (this.previewBubbleComponent) {
       this.previewBubbleComponent.generateNextBubble();
     }
@@ -382,7 +402,7 @@ export class main extends Component {
     return totalTime;
   }
 
-  //Graphics
+  // Graphics
   createLineNode() {
     this.graphics.lineWidth = 3;
     this.graphics.strokeColor = Color.RED;
@@ -393,7 +413,7 @@ export class main extends Component {
     this.graphics.lineTo(endPos.x, endPos.y);
   }
 
-  //Position Calculation
+  // Position Calculation
   distance(nodePos: Vec2, point: Vec2): number {
     return Vec2.distance(nodePos, point);
   }
@@ -430,7 +450,7 @@ export class main extends Component {
     return closestPosition;
   }
 
-  //Raycast & Physics
+  // Raycast & Physics
   createRayToMouse(event: EventMouse) {
     this.graphics.clear();
 
@@ -459,15 +479,12 @@ export class main extends Component {
       ERaycast2DType.Closest
     );
 
-    // Check if raycast hit anything
     if (results.length === 0) {
-      return; // No collision detected, exit early
+      return;
     }
 
     const collider = results[0].collider;
     const point = results[0].point;
-    // const normal = results[0].normal;
-    // const fraction = results[0].fraction;
 
     this.bubblesArray.forEach(x => {
       if (x === collider.node) {
@@ -508,15 +525,12 @@ export class main extends Component {
       ERaycast2DType.Closest
     );
 
-    // Check if raycast hit anything
     if (results.length === 0) {
-      return; // No collision detected, exit early
+      return;
     }
 
     const collider = results[0].collider;
     const point = results[0].point;
-    // const normal = results[0].normal;
-    // const fraction = results[0].fraction;
 
     this.bubblesArray.forEach(x => {
       if (x === collider.node) {
@@ -537,7 +551,7 @@ export class main extends Component {
     }
   }
 
-  //Bubble Matching & Destruction
+  // Bubble Matching & Destruction
   destroyBubble(bubble: Node) {
     if (!bubble.active) return;
 
@@ -554,12 +568,10 @@ export class main extends Component {
 
     const firstBubble = bubblesToDestroy[0];
 
-    // Only destroy if we have at least 3 connected bubbles (including the shot bubble)
     if (bubblesToDestroy.length >= 3) {
       console.log(`Destroying ${bubblesToDestroy.length} connected bubbles`);
       bubblesToDestroy.forEach(bubbleToDestroy => {
         if (bubbleToDestroy.active) {
-          // Disable collider before destroying
           const bubbleComponent = bubbleToDestroy.getComponent(bubblesPrefab);
           if (bubbleComponent) {
             bubbleComponent.disableCollider();
@@ -585,9 +597,7 @@ export class main extends Component {
             .destroyEffect(bubbleToDestroy, velocityX, velocityY, spriteFrame);
 
           bubbleToDestroy.active = false;
-          // Clean up from shot bubbles set if it was a shot bubble
           this.shotBubbles.delete(bubbleToDestroy);
-          // Clean up from falling bubbles set if it was a falling bubble
           this.fallingBubbles.delete(bubbleToDestroy);
         }
       });
@@ -637,9 +647,8 @@ export class main extends Component {
     return node.getComponent(bubblesPrefab).bubbles.spriteFrame;
   }
 
-  // Falling Bubble
+  // Falling Bubbles
   checkForFallingBubbles() {
-    // First check if the original top row (row 14) still has any active visible bubbles
     let hasTopRowBubbles = false;
     this.bubblesArray.forEach(bubble => {
       if (bubble.active) {
@@ -654,13 +663,11 @@ export class main extends Component {
       }
     });
 
-    // If the top row has no visible bubbles, ALL remaining visible bubbles should fall
     if (!hasTopRowBubbles) {
       const allRemainingBubbles: Node[] = [];
       this.bubblesArray.forEach(bubble => {
         if (bubble.active) {
           const bubbleComponent = bubble.getComponent(bubblesPrefab);
-          // Only include visible bubbles for falling
           if (!bubbleComponent || bubbleComponent.isVisibleBubble()) {
             allRemainingBubbles.push(bubble);
           }
@@ -673,33 +680,28 @@ export class main extends Component {
         );
         this.animateFallingBubbles(allRemainingBubbles);
       }
-      return; // Early return since all bubbles are falling
+      return;
     }
 
-    // Original logic for when top row still exists
     const connectedToTop = new Set<Node>();
     const visited = new Set<Node>();
 
-    // Find all bubbles connected to the top row (row 14)
     this.bubblesArray.forEach(bubble => {
       if (bubble.active && this.isTopRowBubble(bubble)) {
         this.findAllConnectedBubbles(bubble, visited, connectedToTop);
       }
     });
 
-    // Find bubbles that are not connected to the top
     const fallingBubbles: Node[] = [];
     this.bubblesArray.forEach(bubble => {
       if (bubble.active && !connectedToTop.has(bubble)) {
         const bubbleComponent = bubble.getComponent(bubblesPrefab);
-        // Only include visible bubbles for falling
         if (!bubbleComponent || bubbleComponent.isVisibleBubble()) {
           fallingBubbles.push(bubble);
         }
       }
     });
 
-    // Make the disconnected bubbles fall
     if (fallingBubbles.length > 0) {
       console.log(
         `Making ${fallingBubbles.length} bubbles fall (disconnected from top)`
@@ -711,16 +713,13 @@ export class main extends Component {
   isTopRowBubble(bubble: Node): boolean {
     if (!bubble.active) return false;
 
-    // For bubbles created in the grid, use the stored row index from component
     const bubbleComponent = bubble.getComponent(bubblesPrefab);
     if (bubbleComponent && bubbleComponent.isGridBubble()) {
-      return bubbleComponent.getRowIndex() === this.rows - 1; // Top row is row 14 (this.rows - 1)
+      return bubbleComponent.getRowIndex() === this.rows - 1;
     }
 
-    // For shot bubbles that don't have grid position, compare with actual top row positions
     const bubbleY = bubble.getWorldPosition().y;
 
-    // Find any bubble that we know is in the top row and use its Y position
     for (const b of this.bubblesArray) {
       if (b.active) {
         const bComponent = b.getComponent(bubblesPrefab);
@@ -742,7 +741,6 @@ export class main extends Component {
     visited.add(bubble);
     result.add(bubble);
 
-    // Get adjacent bubbles and recursively check them
     const bubblePos = new Vec2(
       bubble.getWorldPosition().x,
       bubble.getWorldPosition().y
@@ -757,20 +755,16 @@ export class main extends Component {
   animateFallingBubbles(fallingBubbles: Node[]) {
     if (fallingBubbles.length === 0) return;
 
-    // Use the first bubble as reference point for velocity calculations
     const firstBubble = fallingBubbles[0];
 
     fallingBubbles.forEach((bubble, index) => {
-      // Mark bubble as falling
       this.fallingBubbles.add(bubble);
 
-      // Disable the collider for falling bubbles
       const bubbleComponent = bubble.getComponent(bubblesPrefab);
       if (bubbleComponent) {
         bubbleComponent.disableCollider();
       }
 
-      // Calculate velocity using the same pattern as destroy bubbles
       const deltaX =
         bubble.getWorldPosition().x - firstBubble.getWorldPosition().x;
       const deltaY =
@@ -783,28 +777,22 @@ export class main extends Component {
         300
       );
 
-      // Get the sprite frame for the destroy effect
       const spriteFrame = this.getSpriteFrame(bubble);
 
-      // Use destroy effect for falling animation
       this.destroyLayer
         .getComponent(destroyBubble)
         .destroyEffect(bubble, velocityX, velocityY, spriteFrame);
 
-      // Deactivate the original bubble
       bubble.active = false;
-      // Clean up from shot bubbles set if it was a shot bubble
       this.shotBubbles.delete(bubble);
-      // Clean up from falling bubbles set
       this.fallingBubbles.delete(bubble);
     });
   }
 
-  //Adjacent Bubble Detection
+  // Adjacent Bubble Detection
   getAdjacentBubbles(centerPos: Vec2): Node[] {
     const adjacentBubbles: Node[] = [];
 
-    // Check all active bubbles to see if they're adjacent
     this.bubblesArray.forEach(bubble => {
       if (bubble.active) {
         const bubblePos = new Vec2(
@@ -813,7 +801,6 @@ export class main extends Component {
         );
         const distance = this.distance(bubblePos, centerPos);
 
-        // A bubble is adjacent if it's within approximately one bubble size distance
         if (distance > 0 && distance <= BUBBLES_SIZE * 1.2) {
           adjacentBubbles.push(bubble);
         }
@@ -823,7 +810,6 @@ export class main extends Component {
     return adjacentBubbles;
   }
 
-  // Find minimum Y position of bubbles (excluding shot bubbles and falling bubbles)
   getMinBubblePosition(): number {
     let minY = Infinity;
 
@@ -834,7 +820,6 @@ export class main extends Component {
         !this.fallingBubbles.has(bubble)
       ) {
         const bubbleComponent = bubble.getComponent(bubblesPrefab);
-        // Only consider grid bubbles (not shot bubbles or falling bubbles)
         if (bubbleComponent && bubbleComponent.isGridBubble()) {
           const bubbleY = bubble.getWorldPosition().y;
           if (bubbleY < minY) {
@@ -847,7 +832,6 @@ export class main extends Component {
     return minY === Infinity ? 0 : minY;
   }
 
-  // Move map smoothly to align min position with min line
   moveMapToMinLine() {
     if (this.isMovingToMinLine || !this.gameActive) return;
 
@@ -855,12 +839,10 @@ export class main extends Component {
     const minLineY = this.minLine.getWorldPosition().y;
     const currentMapY = this.node.getPosition().y;
 
-    // Calculate how much we need to move the map
     const targetMapY = currentMapY + (minLineY - minBubbleY);
 
     this.isMovingToMinLine = true;
 
-    // Animate map movement over 1 second
     tween(this.node)
       .to(1.0, {
         position: new Vec3(
@@ -875,42 +857,35 @@ export class main extends Component {
       .start();
   }
 
-  // Check if game should end
   checkGameEnd() {
     if (!this.gameActive) return;
 
     const minBubbleY = this.getMinBubblePosition();
     const endLineY = this.endLine.getWorldPosition().y;
 
-    // Check if minimum bubble position is below the end line
     if (minBubbleY < endLineY) {
       this.endGame();
     }
   }
 
-  // End the game
   endGame() {
     this.gameActive = false;
     console.log('Game Over! Bubbles reached the end line.');
 
-    // Pause all tweens and animations
     Tween.stopAll();
 
-    // Disable input
     input.off(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
     input.off(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
-
-    // You can add more game over logic here (show game over UI, etc.)
   }
 
-  // Restart the game
   restartGame() {
     this.gameActive = true;
     this.isMovingToMinLine = false;
     this.shotBubbles.clear();
     this.fallingBubbles.clear();
+    this.rowCounter = 0;
+    this.clickCooldown = false;
 
-    // Re-enable input
     input.on(Input.EventType.MOUSE_MOVE, this.onMouseMove, this);
     input.on(Input.EventType.MOUSE_DOWN, this.onMouseDown, this);
 
@@ -920,9 +895,7 @@ export class main extends Component {
   update(deltaTime: number) {
     if (!this.gameActive) return;
 
-    // Only move map naturally if not currently moving to min line
     if (!this.isMovingToMinLine) {
-      // Natural downward movement
       this.node.setPosition(
         new Vec3(
           this.node.getPosition().x,
@@ -931,16 +904,13 @@ export class main extends Component {
         )
       );
 
-      // Check conditions
       const minBubbleY = this.getMinBubblePosition();
       const minLineY = this.minLine.getWorldPosition().y;
 
-      // If min bubble position is above min line, move map to align
       if (minBubbleY > minLineY) {
         this.moveMapToMinLine();
       }
 
-      // Check for game end condition
       this.checkGameEnd();
     }
   }
