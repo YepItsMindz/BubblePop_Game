@@ -33,6 +33,7 @@ export const MAP_FALL_SPEED = 20; // Units per second
 
 import { bubblesPrefab } from './prefab/bubblesPrefab';
 import { PreviewBubble } from './previewBubble';
+import { destroyBubble } from './prefab/destroyBubble';
 @ccclass('main')
 export class main extends Component {
   @property(Prefab)
@@ -44,10 +45,12 @@ export class main extends Component {
   @property(SpriteAtlas)
   spriteAtlas: SpriteAtlas = null;
 
+  @property(Node)
+  destroyLayer: Node = null;
+
   @property(Graphics)
   graphics: Graphics = null;
 
-  @property(Node)
   @property(Node)
   startLinePos: Node = null;
 
@@ -216,10 +219,6 @@ export class main extends Component {
     this.bubblesArray.push(bubble);
     this.node.addChild(bubble);
     bubble.setWorldPosition(this.startLinePos.getWorldPosition());
-    console.log(
-      bubble.getComponent(bubblesPrefab).rowIndex,
-      bubble.getComponent(bubblesPrefab).colIndex
-    );
     this.movingBubble(bubble, this.lastCollider);
   }
 
@@ -553,6 +552,8 @@ export class main extends Component {
       bubblesToDestroy
     );
 
+    const firstBubble = bubblesToDestroy[0];
+
     // Only destroy if we have at least 3 connected bubbles (including the shot bubble)
     if (bubblesToDestroy.length >= 3) {
       console.log(`Destroying ${bubblesToDestroy.length} connected bubbles`);
@@ -563,6 +564,25 @@ export class main extends Component {
           if (bubbleComponent) {
             bubbleComponent.disableCollider();
           }
+
+          const deltaX =
+            bubbleToDestroy.getWorldPosition().x -
+            firstBubble.getWorldPosition().x;
+          const deltaY =
+            bubbleToDestroy.getWorldPosition().y -
+            firstBubble.getWorldPosition().y;
+
+          const velocityX =
+            deltaX !== 0 ? Math.min(Math.max(500 / deltaX, -500), 500) : 0;
+          const velocityY = Math.min(
+            Math.max(300 / (Math.abs(deltaY) * 0.1 + 10), -300),
+            300
+          );
+          console.log(velocityX, velocityY);
+
+          this.destroyLayer
+            .getComponent(destroyBubble)
+            .destroyEffect(bubbleToDestroy, velocityX, velocityY, spriteFrame);
 
           bubbleToDestroy.active = false;
           // Clean up from shot bubbles set if it was a shot bubble
@@ -735,6 +755,11 @@ export class main extends Component {
   }
 
   animateFallingBubbles(fallingBubbles: Node[]) {
+    if (fallingBubbles.length === 0) return;
+
+    // Use the first bubble as reference point for velocity calculations
+    const firstBubble = fallingBubbles[0];
+
     fallingBubbles.forEach((bubble, index) => {
       // Mark bubble as falling
       this.fallingBubbles.add(bubble);
@@ -745,38 +770,33 @@ export class main extends Component {
         bubbleComponent.disableCollider();
       }
 
-      // Add a small delay for each bubble to create a cascading effect
-      const delay = index * 0.1;
+      // Calculate velocity using the same pattern as destroy bubbles
+      const deltaX =
+        bubble.getWorldPosition().x - firstBubble.getWorldPosition().x;
+      const deltaY =
+        bubble.getWorldPosition().y - firstBubble.getWorldPosition().y;
 
-      // Add some random horizontal movement for more realistic falling
-      const randomOffsetX = (Math.random() - 0.5) * 100;
-      const randomRotation = (Math.random() - 0.5) * 720; // Random rotation up to 2 full turns
+      const velocityX =
+        deltaX !== 0 ? Math.min(Math.max(500 / deltaX, -500), 500) : 0;
+      const velocityY = Math.min(
+        Math.max(300 / (Math.abs(deltaY) * 0.1 + 10), -300),
+        300
+      );
 
-      // Animate the bubble falling down with rotation and slight horizontal movement
-      tween(bubble)
-        .delay(delay)
-        .parallel(
-          tween().to(1.5, {
-            worldPosition: new Vec3(
-              bubble.getWorldPosition().x + randomOffsetX,
-              bubble.getWorldPosition().y - this.screenSize.height - 200,
-              bubble.getWorldPosition().z
-            ),
-          }),
-          tween().to(1.5, {
-            eulerAngles: new Vec3(0, 0, randomRotation),
-          })
-        )
-        .call(() => {
-          // Remove the bubble after it falls
-          bubble.active = false;
-          // Clean up from shot bubbles set if it was a shot bubble
-          this.shotBubbles.delete(bubble);
-          // Clean up from falling bubbles set
-          this.fallingBubbles.delete(bubble);
-          console.log('Bubble fell and was removed');
-        })
-        .start();
+      // Get the sprite frame for the destroy effect
+      const spriteFrame = this.getSpriteFrame(bubble);
+
+      // Use destroy effect for falling animation
+      this.destroyLayer
+        .getComponent(destroyBubble)
+        .destroyEffect(bubble, velocityX, velocityY, spriteFrame);
+
+      // Deactivate the original bubble
+      bubble.active = false;
+      // Clean up from shot bubbles set if it was a shot bubble
+      this.shotBubbles.delete(bubble);
+      // Clean up from falling bubbles set
+      this.fallingBubbles.delete(bubble);
     });
   }
 

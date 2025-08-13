@@ -16,5 +16,17 @@
       }
     ],
     "increaseId": 1
+  },
+  "physics": {
+    "collisionGroups": [
+      {
+        "index": 1,
+        "name": "Destroy"
+      }
+    ],
+    "collisionMatrix": {
+      "0": 1,
+      "1": 2
+    }
   }
 }
