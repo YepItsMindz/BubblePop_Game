@@ -53,7 +53,7 @@ export class bubblesPrefab extends Component {
     const collider = this.node.getComponent(Collider2D);
     if (collider) {
       collider.enabled = false;
-      console.log('Bubble collider disabled for falling bubble');
+      //console.log('Bubble collider disabled for falling bubble');
     }
   }
 
@@ -62,7 +62,7 @@ export class bubblesPrefab extends Component {
     const collider = this.node.getComponent(Collider2D);
     if (collider) {
       collider.enabled = true;
-      console.log('Bubble collider enabled');
+      //console.log('Bubble collider enabled');
     }
   }
 
