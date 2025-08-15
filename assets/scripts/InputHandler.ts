@@ -101,7 +101,7 @@ export class InputHandler {
 
     const mousePos = new Vec2(
       event.getUILocation().x,
-      Math.max(event.getUILocation().y, 250)
+      Math.max(event.getUILocation().y, 330)
     );
     const ray = this.gameManager.startLinePos.getWorldPosition();
     const rayOrigin = new Vec2(ray.x, ray.y);
@@ -121,15 +121,29 @@ export class InputHandler {
     const results = PhysicsSystem2D.instance.raycast(
       rayOrigin,
       endPoint,
-      ERaycast2DType.Closest
+      ERaycast2DType.All
     );
 
     if (results.length === 0) {
       return;
     }
 
-    const collider = results[0].collider;
-    const point = results[0].point;
+    const sortedResults = Array.from(results).sort((a, b) => {
+      const distanceA = Vec2.distance(rayOrigin, a.point);
+      const distanceB = Vec2.distance(rayOrigin, b.point);
+      return distanceA - distanceB;
+    });
+
+    const validResult = sortedResults.find(result => {
+      return !this.isScoreHoleOrChild(result.collider.node);
+    });
+
+    if (!validResult) {
+      return;
+    }
+
+    const collider = validResult.collider;
+    const point = validResult.point;
 
     this.gameManager.bubblesArray.forEach(x => {
       if (x === collider.node && !this.gameManager.shotBubbles.has(x)) {
@@ -170,15 +184,29 @@ export class InputHandler {
     const results = PhysicsSystem2D.instance.raycast(
       end,
       endPoint,
-      ERaycast2DType.Closest
+      ERaycast2DType.All
     );
 
     if (results.length === 0) {
       return;
     }
 
-    const collider = results[0].collider;
-    const point = results[0].point;
+    const sortedResults = Array.from(results).sort((a, b) => {
+      const distanceA = Vec2.distance(end, a.point);
+      const distanceB = Vec2.distance(end, b.point);
+      return distanceA - distanceB;
+    });
+
+    const validResult = sortedResults.find(result => {
+      return !this.isScoreHoleOrChild(result.collider.node);
+    });
+
+    if (!validResult) {
+      return;
+    }
+
+    const collider = validResult.collider;
+    const point = validResult.point;
 
     this.gameManager.bubblesArray.forEach(x => {
       if (x === collider.node && !this.gameManager.shotBubbles.has(x)) {
@@ -233,5 +261,22 @@ export class InputHandler {
       }
     }
     return closestPosition;
+  }
+
+  private isScoreHoleOrChild(node: Node): boolean {
+    if (node === this.gameManager.scoreHole) {
+      return true;
+    }
+
+    // Check if node is a child of scoreHole
+    let currentParent = node.parent;
+    while (currentParent) {
+      if (currentParent === this.gameManager.scoreHole) {
+        return true;
+      }
+      currentParent = currentParent.parent;
+    }
+
+    return false;
   }
 }

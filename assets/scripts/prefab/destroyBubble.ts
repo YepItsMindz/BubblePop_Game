@@ -12,6 +12,7 @@ import {
 } from 'cc';
 const { ccclass, property } = _decorator;
 
+
 @ccclass('destroyBubble')
 export class destroyBubble extends Component {
   @property(Prefab)
@@ -42,9 +43,9 @@ export class destroyBubble extends Component {
 
     const rg = node.getComponent(RigidBody2D);
     rg.linearVelocity = new Vec2(disX, disY);
-    setTimeout(() => {
-      node.active = false;
-    }, 2000);
+    // setTimeout(() => {
+    //   node.active = false;
+    // }, 2000);
   }
 
   update(deltaTime: number) {}

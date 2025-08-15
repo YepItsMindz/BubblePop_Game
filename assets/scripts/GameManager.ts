@@ -15,6 +15,7 @@ import {
   Vec2,
   NodePool,
   instantiate,
+  Label,
 } from 'cc';
 import { PreviewBubble } from './previewBubble';
 import { BubbleFactory } from './BubbleFactory';
@@ -24,6 +25,7 @@ import { GraphicsRenderer } from './GraphicsRenderer';
 import { BubbleDestroyer } from './BubbleDestroyer';
 import { FallingBubbleManager } from './FallingBubbleManager';
 import { bubblesPrefab } from './prefab/bubblesPrefab';
+import { tagPrefab } from './prefab/tagPrefab';
 
 const { ccclass, property } = _decorator;
 
@@ -65,6 +67,12 @@ export class GameManager extends Component {
   @property(Node)
   minLine: Node = null;
 
+  @property(Node)
+  scoreHole: Node = null;
+
+  @property(Label)
+  score: Label = null;
+
   public rows: number = 100;
   public cols: number = 9;
   public bubblesArray: Node[] = [];
@@ -92,6 +100,7 @@ export class GameManager extends Component {
   private graphicsRenderer: GraphicsRenderer;
   private bubbleDestroyer: BubbleDestroyer;
   private fallingBubbleManager: FallingBubbleManager;
+  private tagScore: tagPrefab;
 
   protected onLoad(): void {
     this.initializeBubblePool();
