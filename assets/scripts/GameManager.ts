@@ -139,6 +139,12 @@ export class GameManager extends Component {
     bubble.active = true;
     bubble.name = bubble.uuid;
 
+    // Ensure collider is enabled for grid bubbles
+    const bubbleComponent = bubble.getComponent(bubblesPrefab);
+    if (bubbleComponent) {
+      bubbleComponent.enableCollider();
+    }
+
     return bubble;
   }
 

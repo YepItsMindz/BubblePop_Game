@@ -27,7 +27,10 @@ export class BubbleFactory {
     console.log(`Adding ${numRows} new rows to the map efficiently`);
 
     const newBubbles: Node[] = [];
-    const startRow = this.gameManager.rows + 10;
+    // Calculate the starting row for new bubbles
+    // The grid starts at row 10 and goes to row (10 + this.gameManager.rows - 1)
+    // So new rows should start at row (10 + this.gameManager.rows)
+    const startRow = 10 + this.gameManager.rows;
 
     for (let i = startRow; i < startRow + numRows; i++) {
       if (i % 2 == 0) {
