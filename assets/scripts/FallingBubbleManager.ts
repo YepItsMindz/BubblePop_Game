@@ -124,7 +124,15 @@ export class FallingBubbleManager {
   public animateFallingBubbles(fallingBubbles: Node[]): void {
     if (fallingBubbles.length === 0) return;
 
-    const firstBubble = fallingBubbles[0];
+    // Calculate CENTER of the falling bubble group for better explosion effect
+    let centerX = 0;
+    let centerY = 0;
+    fallingBubbles.forEach(bubble => {
+      centerX += bubble.getWorldPosition().x;
+      centerY += bubble.getWorldPosition().y;
+    });
+    centerX /= fallingBubbles.length;
+    centerY /= fallingBubbles.length;
 
     fallingBubbles.forEach((bubble, index) => {
       this.gameManager.fallingBubbles.add(bubble);
@@ -134,17 +142,36 @@ export class FallingBubbleManager {
         bubbleComponent.disableCollider();
       }
 
-      const deltaX =
-        bubble.getWorldPosition().x - firstBubble.getWorldPosition().x;
-      const deltaY =
-        bubble.getWorldPosition().y - firstBubble.getWorldPosition().y;
+      const deltaX = bubble.getWorldPosition().x - centerX;
+      const deltaY = bubble.getWorldPosition().y - centerY;
 
-      const velocityX =
-        deltaX !== 0 ? Math.min(Math.max(500 / deltaX, -500), 500) : 0;
-      const velocityY = Math.min(
-        Math.max(300 / (Math.abs(deltaY) * 0.1 + 10), -300),
-        300
-      );
+      // Calculate distance from center for normalized direction
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+      // Firework effect: radiate outward from center with upward bias
+      const explosionForce = 20; // Minimal explosion strength
+      const minVelocity = 5; // Minimal velocity for bubbles at center
+      const upwardBias = 15; // Very small upward velocity for all bubbles
+
+      let velocityX, velocityY;
+
+      if (distance > 0) {
+        // Normalize direction and apply explosion force
+        const normalizedX = deltaX / distance;
+        const normalizedY = deltaY / distance;
+
+        velocityX = normalizedX * explosionForce;
+        velocityY = normalizedY * explosionForce + upwardBias; // Add upward bias
+      } else {
+        // Handle bubbles exactly at center with random direction
+        const randomAngle = Math.random() * Math.PI * 2;
+        velocityX = Math.cos(randomAngle) * minVelocity;
+        velocityY = Math.sin(randomAngle) * minVelocity + upwardBias; // Add upward bias
+      }
+
+      // Add some randomness for more natural effect (minimal)
+      velocityX += (Math.random() - 0.5) * 8;
+      velocityY += (Math.random() - 0.5) * 5; // Less Y randomness to preserve upward motion
 
       const spriteFrame = this.getSpriteFrame(bubble);
 

@@ -48,13 +48,35 @@ export class BubbleDestroyer {
           const deltaX = bubbleToDestroy.getWorldPosition().x - centerX;
           const deltaY = bubbleToDestroy.getWorldPosition().y - centerY;
 
-          const velocityX =
-            deltaX !== 0 ? Math.min(Math.max(200 / deltaX, -500), 500) : 10;
-          const velocityY = Math.min(
-            Math.max(2000 / (Math.abs(deltaY) * 0.1 + 50), -300),
-            500
-          );
-          //console.log(velocityX, velocityY);
+          // Calculate distance from center for normalized direction
+          const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+          // Firework effect: radiate outward from center with upward bias
+          const explosionForce = 20; // Minimal explosion strength
+          const minVelocity = 5; // Minimal velocity for bubbles at center
+          const upwardBias = 15; // Very small upward velocity for all bubbles
+
+          let velocityX, velocityY;
+
+          if (distance > 0) {
+            // Normalize direction and apply explosion force
+            const normalizedX = deltaX / distance;
+            const normalizedY = deltaY / distance;
+
+            velocityX = normalizedX * explosionForce;
+            velocityY = normalizedY * explosionForce + upwardBias; // Add upward bias
+          } else {
+            // Handle bubbles exactly at center with random direction
+            const randomAngle = Math.random() * Math.PI * 2;
+            velocityX = Math.cos(randomAngle) * minVelocity;
+            velocityY = Math.sin(randomAngle) * minVelocity + upwardBias; // Add upward bias
+          }
+
+          // Add some randomness for more natural effect (minimal)
+          velocityX += (Math.random() - 0.5) * 8;
+          velocityY += (Math.random() - 0.5) * 5; // Less Y randomness to preserve upward motion
+
+          //console.log(`Bubble explosion: vX=${velocityX.toFixed(1)}, vY=${velocityY.toFixed(1)}, distance=${distance.toFixed(1)}`);
 
           this.gameManager.destroyLayer
             .getComponent(destroyBubble)
