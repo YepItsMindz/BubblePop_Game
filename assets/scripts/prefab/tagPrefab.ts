@@ -27,7 +27,7 @@ export class tagPrefab extends Component {
     otherCollider: CircleCollider2D,
     contact: IPhysics2DContact | null
   ) {
-    console.log('Sensor detected object:', this.node.name);
+    //console.log('Sensor detected object:', this.node.name);
     this.main.score.string = (
       parseInt(this.main.score.string) +
       this.node.getComponent(BoxCollider2D).tag
@@ -37,6 +37,6 @@ export class tagPrefab extends Component {
   }
 
   onEndContact(selfCollider: BoxCollider2D, otherCollider: BoxCollider2D) {
-    console.log('Object left sensor:', this.node.name);
+    //console.log('Object left sensor:', this.node.name);
   }
 }

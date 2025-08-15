@@ -16,6 +16,7 @@ import {
   NodePool,
   instantiate,
   Label,
+  SpriteFrame,
 } from 'cc';
 import { PreviewBubble } from './previewBubble';
 import { BubbleFactory } from './BubbleFactory';
@@ -72,6 +73,9 @@ export class GameManager extends Component {
 
   @property(Label)
   score: Label = null;
+
+  @property(SpriteFrame)
+  raySf: SpriteFrame = null;
 
   public rows: number = 100;
   public cols: number = 9;
