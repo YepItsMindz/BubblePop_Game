@@ -1,2 +1,5 @@
-1. Explode Effect: Un-real
-2. Graphics: Custom the raycast line 
+1. Optimize the code to reduce the frame time (Target <= 5); Maybe cause of the generate map and not put the destroyed bubble to the node pool.
+2. (Optional) Make the dot of the raycastLine moving forward to the collider. 
+3. Make other preview bubble, can change the bubble by clicking to that.
+4. Create a label to showing the score the player get each time the bubble fall to the pan. (popup effect and disappear)
+5. Create Effect bubbles.

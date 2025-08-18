@@ -281,7 +281,7 @@ export class GameManager extends Component {
     this.isMovingToMinLine = true;
 
     tween(this.node)
-      .to(1.0, {
+      .to(0.3, {
         position: new Vec3(
           this.node.getPosition().x,
           targetMapY,

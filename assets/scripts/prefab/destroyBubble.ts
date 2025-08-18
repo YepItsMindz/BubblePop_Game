@@ -3,6 +3,7 @@ import {
   Component,
   instantiate,
   Node,
+  NodePool,
   Prefab,
   RigidBody2D,
   Sprite,
@@ -12,11 +13,16 @@ import {
 } from 'cc';
 const { ccclass, property } = _decorator;
 
-
 @ccclass('destroyBubble')
 export class destroyBubble extends Component {
   @property(Prefab)
   destroyedBubble: Prefab = null;
+
+  private bubblePool: NodePool = null;
+
+  protected onLoad(): void {
+    this.bubblePool = new NodePool();
+  }
 
   destroyEffect(
     bubblesToDestroy: Node,
@@ -24,7 +30,7 @@ export class destroyBubble extends Component {
     disY: number,
     sf?: SpriteFrame
   ) {
-    const node: Node = instantiate(this.destroyedBubble);
+    const node = this.getFromPool();
     this.node.addChild(node);
     node.setWorldPosition(
       new Vec3(
@@ -48,5 +54,25 @@ export class destroyBubble extends Component {
     // }, 2000);
   }
 
-  update(deltaTime: number) {}
+  public getFromPool(): Node {
+    let bubble: Node;
+    if (this.bubblePool && this.bubblePool.size() > 0) {
+      bubble = this.bubblePool.get();
+    } else {
+      bubble = instantiate(this.destroyedBubble);
+    }
+
+    bubble.active = true;
+    return bubble;
+  }
+
+  public returnToPool(bubble: Node): void {
+    if (!bubble || !bubble.isValid) return;
+    bubble.active = false;
+    bubble.removeFromParent();
+
+    if (this.bubblePool) {
+      this.bubblePool.put(bubble);
+    }
+  }
 }
