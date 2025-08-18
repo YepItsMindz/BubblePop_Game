@@ -63,9 +63,12 @@ export class tagPrefab extends Component {
       })
       .start();
 
-    // Use destroyBubble component's returnToPool method
-    const comp = otherCollider.node.parent.getComponent(destroyBubble);
-    comp.returnToPool(otherCollider.node);
+    if (otherCollider.node && otherCollider.node.parent) {
+      const comp = otherCollider.node.parent.getComponent(destroyBubble);
+      if (comp) {
+        comp.returnToPool(otherCollider.node);
+      }
+    }
   }
 
   onEndContact(selfCollider: BoxCollider2D, otherCollider: BoxCollider2D) {

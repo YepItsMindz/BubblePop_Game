@@ -77,7 +77,7 @@ export class GameManager extends Component {
   @property(SpriteFrame)
   raySf: SpriteFrame = null;
 
-  public rows: number = 100;
+  public rows: number = 60;
   public cols: number = 9;
   public bubblesArray: Node[] = [];
   public groupBubbles: Node[] = [];

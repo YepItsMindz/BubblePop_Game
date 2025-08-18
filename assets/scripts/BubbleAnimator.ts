@@ -77,8 +77,8 @@ export class BubbleAnimator {
 
         // Increment row counter and add rows when counter > 50
         this.gameManager.rowCounter++;
-        if (this.gameManager.rowCounter > 50) {
-          this.gameManager.getBubbleFactory().addNewRowsEfficient(50);
+        if (this.gameManager.rowCounter > 30) {
+          this.gameManager.getBubbleFactory().addNewRowsEfficient(30);
           this.gameManager.rowCounter = 0;
         }
 
