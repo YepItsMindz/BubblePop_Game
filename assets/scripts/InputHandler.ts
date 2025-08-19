@@ -17,6 +17,11 @@ export class InputHandler {
   }
 
   public onMouseMove(event: EventMouse): void {
+    this.gameManager.currentMousePosition = new Vec2(
+      event.getUILocation().x,
+      Math.max(event.getUILocation().y, 330)
+    );
+
     if (!this.gameManager.raycastActive) {
       this.gameManager.raycastActive = true;
     }
@@ -29,6 +34,11 @@ export class InputHandler {
   public onMouseDown(event: EventMouse): void {
     if (!this.gameManager.gameActive || this.gameManager.clickCooldown) return;
 
+    this.gameManager.currentMousePosition = new Vec2(
+      event.getUILocation().x,
+      Math.max(event.getUILocation().y, 330)
+    );
+
     this.gameManager.path.length = 0;
     this.createRayToMouse(event);
     this.predictedBubble(this.gameManager.lastCollider);
@@ -39,20 +49,21 @@ export class InputHandler {
     }, 500);
 
     const bubble: Node = this.gameManager.getBubbleFromPool();
-    const nextIndex = this.gameManager.previewBubbleComponent
-      ? this.gameManager.previewBubbleComponent.nextBubbleIndex
+    const currentIndex = this.gameManager.previewBubbleComponent
+      ? this.gameManager.previewBubbleComponent.currentBubbleIndex
       : 4;
-    const sf = this.gameManager.spriteAtlas.getSpriteFrame(`ball_${nextIndex}`);
+    const sf = this.gameManager.spriteAtlas.getSpriteFrame(
+      `ball_${currentIndex}`
+    );
     bubble.getComponent(bubblesPrefab).setImage(sf);
-
-    this.gameManager.shotBubbles.add(bubble);
-
-    // Disable collider for shot bubble to prevent raycast interference
     bubble.getComponent(bubblesPrefab).disableCollider();
 
+    this.gameManager.shotBubbles.add(bubble);
     this.gameManager.bubblesArray.push(bubble);
     this.gameManager.node.addChild(bubble);
+
     bubble.setWorldPosition(this.gameManager.startLinePos.getWorldPosition());
+
     this.gameManager
       .getBubbleAnimator()
       .movingBubble(bubble, this.gameManager.lastCollider);

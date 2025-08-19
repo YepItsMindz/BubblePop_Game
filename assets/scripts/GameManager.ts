@@ -97,6 +97,9 @@ export class GameManager extends Component {
   public rowCounter: number = 0;
   public clickCooldown: boolean = false;
   public raycastActive: boolean = true;
+  public currentMousePosition: Vec2 = new Vec2(0, 0);
+  private raycastUpdateTimer: number = 0;
+  private raycastUpdateInterval: number = 0.05;
 
   // Component references
   private bubbleFactory: BubbleFactory;
@@ -191,7 +194,7 @@ export class GameManager extends Component {
     this.graphicsRenderer.createLineNode();
 
     if (this.previewBubbleComponent) {
-      this.previewBubbleComponent.createPreviewBubble();
+      this.previewBubbleComponent.createShootBubble();
     }
   }
 
@@ -347,9 +350,27 @@ export class GameManager extends Component {
     console.log('Game restarted!');
   }
 
+  private updateRaycastRealTime(): void {
+    const event = {
+      getUILocation: () => this.currentMousePosition,
+    } as any;
+
+    this.path.length = 0;
+    this.inputHandler.createRayToMouse(event);
+    this.inputHandler.predictedBubble(this.lastCollider);
+  }
+
   update(deltaTime: number): void {
     if (!this.gameActive) return;
     //console.log(this.bubblePool);
+
+    if (this.raycastActive && this.currentMousePosition) {
+      this.raycastUpdateTimer += deltaTime;
+      if (this.raycastUpdateTimer >= this.raycastUpdateInterval) {
+        this.updateRaycastRealTime();
+        this.raycastUpdateTimer = 0;
+      }
+    }
 
     if (!this.isMovingToMinLine) {
       this.node.setPosition(

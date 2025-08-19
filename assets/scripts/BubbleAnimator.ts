@@ -106,7 +106,7 @@ export class BubbleAnimator {
     );
 
     if (this.gameManager.previewBubbleComponent) {
-      this.gameManager.previewBubbleComponent.generateNextBubble();
+      this.gameManager.previewBubbleComponent.updateShootBubble();
     }
   }
 
