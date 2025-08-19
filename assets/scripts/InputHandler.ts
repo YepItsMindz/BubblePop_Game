@@ -29,7 +29,6 @@ export class InputHandler {
   public onMouseDown(event: EventMouse): void {
     if (!this.gameManager.gameActive || this.gameManager.clickCooldown) return;
 
-    // Update raycast and prediction before shooting
     this.gameManager.path.length = 0;
     this.createRayToMouse(event);
     this.predictedBubble(this.gameManager.lastCollider);

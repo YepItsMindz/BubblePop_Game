@@ -17,6 +17,7 @@ import {
   instantiate,
   Label,
   SpriteFrame,
+  RigidBody2D,
 } from 'cc';
 import { PreviewBubble } from './previewBubble';
 import { BubbleFactory } from './BubbleFactory';
@@ -104,7 +105,6 @@ export class GameManager extends Component {
   private graphicsRenderer: GraphicsRenderer;
   private bubbleDestroyer: BubbleDestroyer;
   private fallingBubbleManager: FallingBubbleManager;
-  private tagScore: tagPrefab;
 
   protected onLoad(): void {
     this.initializeBubblePool();
@@ -181,13 +181,14 @@ export class GameManager extends Component {
     this.bubbleDestroyer = new BubbleDestroyer(this);
     this.fallingBubbleManager = new FallingBubbleManager(this);
   }
+  protected __preload(): void {
+    PhysicsSystem2D.instance.enable = true;
+    PhysicsSystem2D.instance.gravity = new Vec2(0, -700);
+  }
 
   private initializeGame(): void {
     this.bubbleFactory.createMaps();
     this.graphicsRenderer.createLineNode();
-
-    PhysicsSystem2D.instance.enable = true;
-    PhysicsSystem2D.instance.gravity = new Vec2(0, -700);
 
     if (this.previewBubbleComponent) {
       this.previewBubbleComponent.createPreviewBubble();

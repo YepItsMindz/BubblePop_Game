@@ -26,9 +26,6 @@ export class PreviewBubble extends Component {
   public previewBubble: Node = null;
   public nextBubbleIndex: number = 0;
 
-  // Reference to the newPosition method from main class
-  public newPosition: (nodePos: Vec2, point: Vec2) => Vec2;
-
   createPreviewBubble() {
     this.previewBubble = instantiate(this.bubbles);
     this.generateNextBubble();
@@ -44,7 +41,7 @@ export class PreviewBubble extends Component {
 
   start() {
     // Initialize the preview bubble when the component starts
-    this.createPreviewBubble();
+    //this.createPreviewBubble();
   }
 
   update(deltaTime: number) {

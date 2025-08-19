@@ -32,8 +32,8 @@ export class tagPrefab extends Component {
   start() {
     // Initialize the score pool
     this.scorePool = new NodePool();
-    PhysicsSystem2D.instance.enable = true;
-    //PhysicsSystem2D.instance.debugDrawFlags = EPhysics2DDrawFlags.All;
+    // PhysicsSystem2D.instance.enable = true;
+    // PhysicsSystem2D.instance.debugDrawFlags = EPhysics2DDrawFlags.All;
 
     let collider = this.getComponent(BoxCollider2D);
     if (collider) {
@@ -90,7 +90,7 @@ export class tagPrefab extends Component {
 
   public returnScoreLabelToPool(scoreLabel: Node): void {
     if (!scoreLabel || !scoreLabel.isValid) return;
-    scoreLabel.setPosition(0, 0, 0);
+    scoreLabel.setPosition(0, 10, 0);
     scoreLabel.active = false;
     scoreLabel.removeFromParent();
 
