@@ -16,7 +16,7 @@ export class BubbleFactory {
           this.createBubbles(i, j);
         }
       } else {
-        for (let j = 1; j < this.gameManager.cols; j++) {
+        for (let j = 0; j <= this.gameManager.cols; j++) {
           this.createBubbles(i, j);
         }
       }
@@ -115,8 +115,7 @@ export class BubbleFactory {
           1
         )
       );
-      if (j === 0 || j === this.gameManager.cols)
-        node.getComponent(bubblesPrefab).bubbles.node.active = false;
+      if (j === 0 || j === this.gameManager.cols) node.active = false;
     }
   }
 }

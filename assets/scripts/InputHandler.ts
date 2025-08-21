@@ -238,6 +238,7 @@ export class InputHandler {
       this.gameManager.path.push(point);
       this.gameManager.lastCollider = collider.node;
     }
+    
   }
 
   public newPosition(nodePos: Vec2, point: Vec2): Vec2 {

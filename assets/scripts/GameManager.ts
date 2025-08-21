@@ -142,9 +142,10 @@ export class GameManager extends Component {
     bubble.active = true;
     bubble.name = bubble.uuid;
 
-    // Ensure collider is enabled for grid bubbles
+    // Reset grid position and ensure collider is enabled
     const bubbleComponent = bubble.getComponent(bubblesPrefab);
     if (bubbleComponent) {
+      bubbleComponent.setGridPosition(-1, -1); // Reset to indicate not in grid yet
       bubbleComponent.enableCollider();
     }
 
@@ -157,6 +158,15 @@ export class GameManager extends Component {
     // Reset bubble state before returning to pool
     bubble.active = false;
     bubble.removeFromParent();
+
+    // Reset grid position to default values
+    const bubbleComponent = bubble.getComponent(bubblesPrefab);
+    if (bubbleComponent) {
+      bubbleComponent.setGridPosition(-1, -1);
+    }
+
+    // Clean up any collider tracking in BubbleAnimator
+    this.bubbleAnimator.cleanupBubbleCollider(bubble);
 
     // Remove from tracking sets
     this.shotBubbles.delete(bubble);

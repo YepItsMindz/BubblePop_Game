@@ -1,73 +1,75 @@
-import { Tween, Vec2, Vec3, view, Node } from 'cc';
+import { Tween, Vec2, Vec3, view, Node, instantiate, nextPow2, path } from 'cc';
 import { BUBBLES_SIZE, MAP_FALL_SPEED } from './GameManager';
 import { bubblesPrefab } from './prefab/bubblesPrefab';
 
 export class BubbleAnimator {
   private gameManager: any;
+  private bubbleColliderMap: Map<Node, Node> = new Map(); // Track which collider each bubble used
 
   constructor(gameManager: any) {
     this.gameManager = gameManager;
   }
 
   public movingBubble(bubble: Node, collider: Node): void {
+    this.bubbleColliderMap.set(bubble, collider);
     let lastPath = this.gameManager.path[this.gameManager.path.length - 1];
+    let calculatedGridPos: { row: number; col: number } | null = null;
+    let mapX: number;
+    let mapY: number;
+
     this.gameManager.bubblesArray.forEach(i => {
       if (collider === i) {
-        const pos2 = this.newPosition(
-          new Vec2(i.getWorldPosition().x, i.getWorldPosition().y),
-          lastPath
+        const gridPos = this.newGridPosition(i, lastPath);
+        calculatedGridPos = gridPos;
+
+        const bubbleComponent = bubble.getComponent(bubblesPrefab);
+        if (bubbleComponent) {
+          bubbleComponent.setGridPosition(gridPos.row, gridPos.col);
+          // console.log(
+          //   `Bubble assigned to grid position: row ${gridPos.row}, col ${gridPos.col}`
+          // );
+        }
+
+        mapY = gridPos.row * BUBBLES_SIZE * 0.85;
+        if (gridPos.row % 2 === 0) {
+          mapX = (gridPos.col - (this.gameManager.cols - 1) / 2) * BUBBLES_SIZE;
+        } else {
+          mapX =
+            (gridPos.col - (this.gameManager.cols - 1) / 2) * BUBBLES_SIZE -
+            BUBBLES_SIZE / 2;
+        }
+
+        // Special Case - handle screen boundaries
+        ({ lastPath, mapX, mapY } = this.handleScreenBoundaries(
+          bubble,
+          lastPath,
+          gridPos,
+          mapX,
+          mapY
+        ));
+
+        bubble.setPosition(mapX, mapY);
+        lastPath = bubble.getWorldPosition();
+        bubble.setWorldPosition(
+          this.gameManager.startLinePos.getWorldPosition()
         );
-        lastPath = new Vec2(pos2.x, pos2.y);
       }
     });
 
-    // Special Case
-    if (lastPath.x < 0) lastPath.x += BUBBLES_SIZE;
-    if (lastPath.x > view.getVisibleSize().x) lastPath.x -= BUBBLES_SIZE;
-
-    const isOccupied = this.gameManager.bubblesArray.some(bubble => {
-      if (!bubble.active) return false;
-      const bubblePos = new Vec2(
-        bubble.getWorldPosition().x,
-        bubble.getWorldPosition().y
-      );
-      return Vec2.distance(bubblePos, lastPath) < BUBBLES_SIZE * 0.5;
-    });
-
-    if (isOccupied) {
-      if (lastPath.x - BUBBLES_SIZE < 0) {
-        lastPath.x -= BUBBLES_SIZE / 2;
-        lastPath.y -= BUBBLES_SIZE * 0.85;
-      }
-      if (lastPath.x + BUBBLES_SIZE > view.getVisibleSize().x) {
-        lastPath.x += BUBBLES_SIZE / 2;
-        lastPath.y -= BUBBLES_SIZE * 0.85;
-      }
-    }
-
-    this.gameManager.path[this.gameManager.path.length - 1] = lastPath;
-
-    const animationTime = this.calculateAnimationTime();
+    //Make the last path falling down with the map
     const mapMovementDuringFlight = this.gameManager.isMovingToMinLine
       ? 0
-      : animationTime * MAP_FALL_SPEED;
-
+      : this.calculateAnimationTime() * MAP_FALL_SPEED;
     const compensatedPath = new Vec2(
       lastPath.x,
       lastPath.y - mapMovementDuringFlight
     );
-
     this.gameManager.path[this.gameManager.path.length - 1] = compensatedPath;
-
     this.animateBubble(bubble);
 
-    // Check for matches after the bubble reaches its final position
     setTimeout(
       () => {
-        // Set the bubble to its final position to ensure accurate adjacent bubble detection
-        bubble.setWorldPosition(
-          new Vec3(compensatedPath.x, compensatedPath.y, 1)
-        );
+        bubble.setPosition(mapX, mapY);
 
         // Remove from shot bubbles set since it has now settled
         this.gameManager.shotBubbles.delete(bubble);
@@ -75,14 +77,21 @@ export class BubbleAnimator {
         // Re-enable collider since bubble has settled
         bubble.getComponent(bubblesPrefab).enableCollider();
 
-        // Increment row counter and add rows when counter > 50
+        // Increment row counter and add rows when counter > 30
         this.gameManager.rowCounter++;
         if (this.gameManager.rowCounter > 30) {
           this.gameManager.getBubbleFactory().addNewRowsEfficient(30);
           this.gameManager.rowCounter = 0;
         }
 
-        const adjacentBubbles = this.getAdjacentBubbles(compensatedPath);
+        // Get adjacent bubbles using the grid position instead of world position
+        const colliderRow = bubble.getComponent(bubblesPrefab).getRowIndex();
+        const colliderCol = bubble.getComponent(bubblesPrefab).getColIndex();
+
+        const adjacentBubbles = this.getAdjacentBubbles(
+          colliderRow,
+          colliderCol
+        );
         //console.log('Adjacent bubbles found:', adjacentBubbles.length);
         let hasMatch = false;
 
@@ -97,6 +106,8 @@ export class BubbleAnimator {
 
         if (hasMatch) {
           //console.log('Match found - destroying bubbles');
+          // Clean up map entries before destroying
+          this.bubbleColliderMap.delete(bubble);
           this.gameManager.getBubbleDestroyer().destroyBubble(bubble);
         } else {
           //console.log('No match - bubble stays in place');
@@ -148,52 +159,175 @@ export class BubbleAnimator {
     return Vec2.distance(nodePos, point);
   }
 
-  public newPosition(nodePos: Vec2, point: Vec2): Vec2 {
-    const positions = [
-      new Vec2(nodePos.x + BUBBLES_SIZE / 2, nodePos.y - BUBBLES_SIZE * 0.85),
-      new Vec2(nodePos.x + BUBBLES_SIZE, nodePos.y),
-      new Vec2(nodePos.x + BUBBLES_SIZE / 2, nodePos.y + BUBBLES_SIZE * 0.85),
-      new Vec2(nodePos.x - BUBBLES_SIZE / 2, nodePos.y - BUBBLES_SIZE * 0.85),
-      new Vec2(nodePos.x - BUBBLES_SIZE, nodePos.y),
-      new Vec2(nodePos.x - BUBBLES_SIZE / 2, nodePos.y + BUBBLES_SIZE * 0.85),
-    ];
-    let minDistance = Infinity;
-    let closestPosition = positions[0];
-
-    for (const pos of positions) {
-      const isOccupied = this.gameManager.bubblesArray.some(x => {
-        const bubblePos = new Vec2(
-          x.getWorldPosition().x,
-          x.getWorldPosition().y
-        );
-        if (x.active == true) return Vec2.equals(bubblePos, pos);
-      });
-
-      if (isOccupied) continue;
-
-      const distance = this.distance(pos, point);
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestPosition = pos;
+  public handleScreenBoundaries(
+    bubble: Node,
+    lastPath: Vec3,
+    gridPos: { row: number; col: number },
+    mapX: number,
+    mapY: number
+  ): { lastPath: Vec3; mapX: number; mapY: number } {
+    // Handle left boundary
+    if (gridPos.col == 0 && gridPos.row % 2 == 1) {
+      const positionLeft = [
+        { row: 0, col: 1 }, //Right
+        { row: -1, col: 0 }, //Bottom-left
+        { row: 1, col: 0 }, //Top-left
+      ];
+      for (const position of positionLeft) {
+        const newRow = gridPos.row + position.row;
+        const newCol = gridPos.col + position.col;
+        // Check if the new position is occupied
+        const isOccupied = this.isPositionOccupied(newRow, newCol);
+        if (isOccupied) continue;
+        if (!isOccupied) {
+          if (position.row == 0) mapX += BUBBLES_SIZE * position.col;
+          else mapX += BUBBLES_SIZE * position.col + BUBBLES_SIZE / 2;
+          mapY += BUBBLES_SIZE * position.row * 0.85;
+          lastPath.x += BUBBLES_SIZE * position.col;
+          lastPath.y += BUBBLES_SIZE * position.row * 0.85;
+          bubble.getComponent(bubblesPrefab).setGridPosition(newRow, newCol);
+          return { lastPath, mapX, mapY };
+        }
       }
     }
-    return closestPosition;
+
+    // Handle right boundary
+    if (gridPos.col == this.gameManager.cols && gridPos.row % 2 == 1) {
+      const positionLeft = [
+        { row: 0, col: -1 }, //Left
+        { row: -1, col: 0 }, //Bottom-left
+        { row: 1, col: 0 }, //Top-left
+      ];
+      for (const position of positionLeft) {
+        const newRow = gridPos.row + position.row;
+        const newCol = gridPos.col + position.col;
+
+        // Check if the new position is occupied
+        const isOccupied = this.isPositionOccupied(newRow, newCol);
+        if (isOccupied) continue;
+        if (!isOccupied) {
+          if (position.row == 0) mapX += BUBBLES_SIZE * position.col;
+          else mapX += BUBBLES_SIZE * position.col - BUBBLES_SIZE / 2;
+          mapY += BUBBLES_SIZE * position.row * 0.85;
+          lastPath.x += BUBBLES_SIZE * position.row;
+          lastPath.y += BUBBLES_SIZE * position.col * 0.85;
+          bubble.getComponent(bubblesPrefab).setGridPosition(newRow, newCol);
+          return { lastPath, mapX, mapY };
+        }
+      }
+    }
+
+    return { lastPath, mapX, mapY };
   }
 
-  public getAdjacentBubbles(centerPos: Vec2): Node[] {
+  public isPositionOccupied(row: number, col: number): boolean {
+    return this.gameManager.bubblesArray.some(bubble => {
+      if (!bubble.active) return false;
+      const bubbleComponent = bubble.getComponent(bubblesPrefab);
+      if (!bubbleComponent || !bubbleComponent.isGridBubble()) return false;
+
+      return (
+        bubbleComponent.getRowIndex() === row &&
+        bubbleComponent.getColIndex() === col
+      );
+    });
+  }
+
+  public newGridPosition(
+    colliderBubble: Node,
+    pos: Vec2
+  ): { row: number; col: number } {
+    const colliderComponent = colliderBubble.getComponent(bubblesPrefab);
+
+    const colliderRow = colliderComponent.getRowIndex();
+    const colliderCol = colliderComponent.getColIndex();
+
+    const adjacentPositions = [
+      {
+        row: colliderRow - 1,
+        col: colliderCol + (colliderRow % 2 === 0 ? 1 : 0),
+      }, // Top-right
+      { row: colliderRow, col: colliderCol + 1 }, // Right
+      {
+        row: colliderRow + 1,
+        col: colliderCol + (colliderRow % 2 === 0 ? 1 : 0),
+      }, // Bottom-right
+      {
+        row: colliderRow + 1,
+        col: colliderCol + (colliderRow % 2 === 0 ? 0 : -1),
+      }, // Bottom-left
+      { row: colliderRow, col: colliderCol - 1 }, // Left
+      {
+        row: colliderRow - 1,
+        col: colliderCol + (colliderRow % 2 === 0 ? 0 : -1),
+      }, // Top-left
+    ];
+
+    let minDist = Infinity;
+    let finalRowIndex = colliderRow;
+    let finalColIndex = colliderCol;
+
+    for (const position of adjacentPositions) {
+      const isOccupied = this.isPositionOccupied(position.row, position.col);
+      if (!isOccupied) {
+        const worldY = position.row * BUBBLES_SIZE * 0.85;
+        let worldX;
+        if (position.row % 2 === 0) {
+          worldX =
+            (position.col - (this.gameManager.cols - 1) / 2) * BUBBLES_SIZE;
+        } else {
+          worldX =
+            (position.col - (this.gameManager.cols - 1) / 2) * BUBBLES_SIZE -
+            BUBBLES_SIZE / 2;
+        }
+        const tmp: Node = instantiate(this.gameManager.bubbles);
+        this.gameManager.node.addChild(tmp);
+        tmp.setPosition(worldX, worldY);
+        const dist = this.distance(
+          new Vec2(tmp.getWorldPosition().x, tmp.getWorldPosition().y),
+          pos
+        );
+        tmp.removeFromParent();
+        if (minDist > dist) {
+          minDist = dist;
+          finalRowIndex = position.row;
+          finalColIndex = position.col;
+        }
+      }
+    }
+
+    return {
+      row: finalRowIndex,
+      col: finalColIndex,
+    };
+  }
+
+  public getAdjacentBubbles(row: number, col: number): Node[] {
     const adjacentBubbles: Node[] = [];
+    const targetRow = row;
+    const targetCol = col;
+
+    const adjacentPositions = [
+      { row: targetRow - 1, col: targetCol + (targetRow % 2 === 0 ? 1 : 0) }, // Top-right
+      { row: targetRow, col: targetCol + 1 }, // Right
+      { row: targetRow + 1, col: targetCol + (targetRow % 2 === 0 ? 1 : 0) }, // Bottom-right
+      { row: targetRow + 1, col: targetCol + (targetRow % 2 === 0 ? 0 : -1) }, // Bottom-left
+      { row: targetRow, col: targetCol - 1 }, // Left
+      { row: targetRow - 1, col: targetCol + (targetRow % 2 === 0 ? 0 : -1) }, // Top-left
+    ];
 
     this.gameManager.bubblesArray.forEach(bubble => {
-      if (bubble.active) {
-        const bubblePos = new Vec2(
-          bubble.getWorldPosition().x,
-          bubble.getWorldPosition().y
-        );
-        const distance = this.distance(bubblePos, centerPos);
+      const bubbleComponent = bubble.getComponent(bubblesPrefab);
+      if (!bubbleComponent || !bubbleComponent.isGridBubble()) return;
 
-        if (distance > 0 && distance <= BUBBLES_SIZE * 1.2) {
-          adjacentBubbles.push(bubble);
-        }
+      const bubbleRow = bubbleComponent.getRowIndex();
+      const bubbleCol = bubbleComponent.getColIndex();
+      const isAdjacent = adjacentPositions.some(
+        pos => pos.row === bubbleRow && pos.col === bubbleCol
+      );
+
+      if (isAdjacent) {
+        adjacentBubbles.push(bubble);
       }
     });
 
@@ -202,5 +336,9 @@ export class BubbleAnimator {
 
   public getSpriteFrame(node: Node) {
     return node.getComponent(bubblesPrefab).bubbles.spriteFrame;
+  }
+
+  public cleanupBubbleCollider(bubble: Node): void {
+    this.bubbleColliderMap.delete(bubble);
   }
 }
