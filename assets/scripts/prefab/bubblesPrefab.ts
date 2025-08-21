@@ -6,6 +6,7 @@ import {
   SpriteFrame,
   Collider2D,
 } from 'cc';
+import { GameManager } from '../GameManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('bubblesPrefab')
@@ -38,6 +39,28 @@ export class bubblesPrefab extends Component {
 
   getColIndex(): number {
     return this.colIndex;
+  }
+
+  getPosY(): number {
+    const BUBBLES_SIZE = 68;
+    return this.getRowIndex() * BUBBLES_SIZE * 0.85;
+  }
+
+  getPosX(): number {
+    const BUBBLES_SIZE = 68;
+    const main = this.node.getParent();
+    if (this.getRowIndex() % 2 === 0) {
+      return (
+        (this.getColIndex() - (main.getComponent(GameManager).cols - 1) / 2) *
+        BUBBLES_SIZE
+      );
+    } else {
+      return (
+        (this.getColIndex() - (main.getComponent(GameManager).cols - 1) / 2) *
+          BUBBLES_SIZE -
+        BUBBLES_SIZE / 2
+      );
+    }
   }
 
   isGridBubble(): boolean {

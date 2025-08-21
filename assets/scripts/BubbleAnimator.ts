@@ -70,7 +70,6 @@ export class BubbleAnimator {
     setTimeout(
       () => {
         bubble.setPosition(mapX, mapY);
-
         // Remove from shot bubbles set since it has now settled
         this.gameManager.shotBubbles.delete(bubble);
 
@@ -84,7 +83,6 @@ export class BubbleAnimator {
           this.gameManager.rowCounter = 0;
         }
 
-        // Get adjacent bubbles using the grid position instead of world position
         const colliderRow = bubble.getComponent(bubblesPrefab).getRowIndex();
         const colliderCol = bubble.getComponent(bubblesPrefab).getColIndex();
 
@@ -94,6 +92,8 @@ export class BubbleAnimator {
         );
         //console.log('Adjacent bubbles found:', adjacentBubbles.length);
         let hasMatch = false;
+
+        
 
         adjacentBubbles.forEach(adjacentBubble => {
           if (
@@ -106,7 +106,6 @@ export class BubbleAnimator {
 
         if (hasMatch) {
           //console.log('Match found - destroying bubbles');
-          // Clean up map entries before destroying
           this.bubbleColliderMap.delete(bubble);
           this.gameManager.getBubbleDestroyer().destroyBubble(bubble);
         } else {
