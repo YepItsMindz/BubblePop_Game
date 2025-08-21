@@ -89,13 +89,47 @@ export class InputHandler {
     }
 
     let lastPath = this.gameManager.path[this.gameManager.path.length - 1];
+    let gridPosition: { row: number; col: number } | null = null;
+
     this.gameManager.bubblesArray.forEach(i => {
       if (collider === i && !this.gameManager.shotBubbles.has(i)) {
-        const pos2 = this.newPosition(
-          new Vec2(i.getWorldPosition().x, i.getWorldPosition().y),
+        gridPosition = this.gameManager
+          .getBubbleAnimator()
+          .newGridPosition(i, lastPath);
+
+        const BUBBLES_SIZE = 68;
+        const mapY = gridPosition.row * BUBBLES_SIZE * 0.85;
+        let mapX;
+
+        if (gridPosition.row % 2 === 0) {
+          mapX =
+            (gridPosition.col - (this.gameManager.cols - 1) / 2) * BUBBLES_SIZE;
+        } else {
+          mapX =
+            (gridPosition.col - (this.gameManager.cols - 1) / 2) *
+              BUBBLES_SIZE -
+            BUBBLES_SIZE / 2;
+        }
+
+        const tempNode = new Node();
+        this.gameManager.node.addChild(tempNode);
+        tempNode.setPosition(mapX, mapY);
+        const worldPos = tempNode.getWorldPosition();
+        tempNode.removeFromParent();
+
+        lastPath = new Vec2(worldPos.x, worldPos.y);
+
+        const boundaryResult = this.handlePredictedBubbleScreenBoundaries(
+          gridPosition,
+          mapX,
+          mapY,
           lastPath
         );
-        lastPath = new Vec2(pos2.x, pos2.y);
+
+        if (boundaryResult) {
+          lastPath = boundaryResult.worldPos;
+          gridPosition = boundaryResult.gridPos;
+        }
       }
     });
 
@@ -238,7 +272,6 @@ export class InputHandler {
       this.gameManager.path.push(point);
       this.gameManager.lastCollider = collider.node;
     }
-    
   }
 
   public newPosition(nodePos: Vec2, point: Vec2): Vec2 {
@@ -279,7 +312,6 @@ export class InputHandler {
       return true;
     }
 
-    // Check if node is a child of scoreHole
     let currentParent = node.parent;
     while (currentParent) {
       if (currentParent === this.gameManager.scoreHole) {
@@ -289,5 +321,90 @@ export class InputHandler {
     }
 
     return false;
+  }
+
+  private handlePredictedBubbleScreenBoundaries(
+    gridPos: { row: number; col: number },
+    mapX: number,
+    mapY: number,
+    worldPos: Vec2
+  ): { gridPos: { row: number; col: number }; worldPos: Vec2 } | null {
+    const BUBBLES_SIZE = 68;
+
+    if (gridPos.col == 0 && gridPos.row % 2 == 1) {
+      const positionLeft = [
+        { row: 0, col: 1 },
+        { row: -1, col: 0 },
+        { row: 1, col: 0 },
+      ];
+      for (const position of positionLeft) {
+        const newRow = gridPos.row + position.row;
+        const newCol = gridPos.col + position.col;
+
+        const isOccupied = this.gameManager
+          .getBubbleAnimator()
+          .isPositionOccupied(newRow, newCol);
+        if (isOccupied) continue;
+
+        if (!isOccupied) {
+          let newMapX = mapX;
+          let newMapY = mapY;
+
+          if (position.row == 0) newMapX += BUBBLES_SIZE * position.col;
+          else newMapX += BUBBLES_SIZE * position.col + BUBBLES_SIZE / 2;
+          newMapY += BUBBLES_SIZE * position.row * 0.85;
+
+          const tempNode = new Node();
+          this.gameManager.node.addChild(tempNode);
+          tempNode.setPosition(newMapX, newMapY);
+          const newWorldPos = tempNode.getWorldPosition();
+          tempNode.removeFromParent();
+
+          return {
+            gridPos: { row: newRow, col: newCol },
+            worldPos: new Vec2(newWorldPos.x, newWorldPos.y),
+          };
+        }
+      }
+    }
+
+    if (gridPos.col == this.gameManager.cols && gridPos.row % 2 == 1) {
+      const positionLeft = [
+        { row: 0, col: -1 },
+        { row: -1, col: 0 },
+        { row: 1, col: 0 },
+      ];
+      for (const position of positionLeft) {
+        const newRow = gridPos.row + position.row;
+        const newCol = gridPos.col + position.col;
+
+        const isOccupied = this.gameManager
+          .getBubbleAnimator()
+          .isPositionOccupied(newRow, newCol);
+        if (isOccupied) continue;
+
+        if (!isOccupied) {
+          let newMapX = mapX;
+          let newMapY = mapY;
+
+          if (position.row == 0) newMapX += BUBBLES_SIZE * position.col;
+          else newMapX += BUBBLES_SIZE * position.col - BUBBLES_SIZE / 2;
+          newMapY += BUBBLES_SIZE * position.row * 0.85;
+
+          const tempNode = new Node();
+          this.gameManager.node.addChild(tempNode);
+          tempNode.setPosition(newMapX, newMapY);
+          const newWorldPos = tempNode.getWorldPosition();
+          tempNode.removeFromParent();
+
+          return {
+            gridPos: { row: newRow, col: newCol },
+            worldPos: new Vec2(newWorldPos.x, newWorldPos.y),
+          };
+        }
+      }
+    }
+
+    return null;
   }
 }
