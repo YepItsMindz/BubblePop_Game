@@ -18,6 +18,7 @@ import {
   Label,
   SpriteFrame,
   RigidBody2D,
+  director,
 } from 'cc';
 import { PreviewBubble } from './previewBubble';
 import { BubbleFactory } from './BubbleFactory';
@@ -27,7 +28,6 @@ import { GraphicsRenderer } from './GraphicsRenderer';
 import { BubbleDestroyer } from './BubbleDestroyer';
 import { FallingBubbleManager } from './FallingBubbleManager';
 import { bubblesPrefab } from './prefab/bubblesPrefab';
-import { tagPrefab } from './prefab/tagPrefab';
 
 const { ccclass, property } = _decorator;
 
@@ -78,8 +78,9 @@ export class GameManager extends Component {
   @property(SpriteFrame)
   raySf: SpriteFrame = null;
 
-  public rows: number = 60;
+  public rows: number = 20;
   public cols: number = 9;
+  public totalRows: number = 20;
   public bubblesArray: Node[] = [];
   public groupBubbles: Node[] = [];
   public bubblePool: NodePool = new NodePool();
@@ -94,7 +95,7 @@ export class GameManager extends Component {
   public isMovingToMinLine: boolean = false;
   public shotBubbles: Set<Node> = new Set();
   public fallingBubbles: Set<Node> = new Set();
-  public rowCounter: number = 0;
+  public rowCounter: number = 1;
   public clickCooldown: boolean = false;
   public raycastActive: boolean = true;
   public currentMousePosition: Vec2 = new Vec2(0, 0);
@@ -283,6 +284,48 @@ export class GameManager extends Component {
     return minY === Infinity ? 0 : minY;
   }
 
+  public getMinBubbleRowIndex(): number {
+    let rowY = Infinity;
+    this.bubblesArray.forEach(bubble => {
+      if (
+        bubble.active &&
+        !this.shotBubbles.has(bubble) &&
+        !this.fallingBubbles.has(bubble)
+      ) {
+        const bubbleComponent = bubble.getComponent(bubblesPrefab);
+        if (bubbleComponent && bubbleComponent.isGridBubble()) {
+          const bubbleY = bubbleComponent.getRowIndex();
+          if (bubbleY < rowY) {
+            rowY = bubbleY;
+          }
+        }
+      }
+    });
+
+    return rowY === Infinity ? 0 : rowY;
+  }
+
+  public getMaxBubbleRowIndex(): number {
+    let rowY = 0;
+    this.bubblesArray.forEach(bubble => {
+      if (
+        bubble.active &&
+        !this.shotBubbles.has(bubble) &&
+        !this.fallingBubbles.has(bubble)
+      ) {
+        const bubbleComponent = bubble.getComponent(bubblesPrefab);
+        if (bubbleComponent && bubbleComponent.isGridBubble()) {
+          const bubbleY = bubbleComponent.getRowIndex();
+          if (bubbleY > rowY) {
+            rowY = bubbleY;
+          }
+        }
+      }
+    });
+
+    return rowY;
+  }
+
   public moveMapToMinLine(): void {
     if (this.isMovingToMinLine || !this.gameActive) return;
 
@@ -373,6 +416,7 @@ export class GameManager extends Component {
   update(deltaTime: number): void {
     if (!this.gameActive) return;
     //console.log(this.bubblePool);
+    console.log(this.getMaxBubbleRowIndex(), this.getMinBubbleRowIndex());
 
     if (this.raycastActive && this.currentMousePosition) {
       this.raycastUpdateTimer += deltaTime;

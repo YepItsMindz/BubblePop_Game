@@ -52,6 +52,7 @@ export class destroyBubble extends Component {
     // setTimeout(() => {
     //   node.active = false;
     // }, 2000);
+    
   }
 
   public getFromPool(): Node {

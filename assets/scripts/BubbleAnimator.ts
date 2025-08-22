@@ -76,13 +76,6 @@ export class BubbleAnimator {
         // Re-enable collider since bubble has settled
         bubble.getComponent(bubblesPrefab).enableCollider();
 
-        // Increment row counter and add rows when counter > 30
-        this.gameManager.rowCounter++;
-        if (this.gameManager.rowCounter > 30) {
-          this.gameManager.getBubbleFactory().addNewRowsEfficient(30);
-          this.gameManager.rowCounter = 0;
-        }
-
         const colliderRow = bubble.getComponent(bubblesPrefab).getRowIndex();
         const colliderCol = bubble.getComponent(bubblesPrefab).getColIndex();
 
@@ -92,8 +85,6 @@ export class BubbleAnimator {
         );
         //console.log('Adjacent bubbles found:', adjacentBubbles.length);
         let hasMatch = false;
-
-        
 
         adjacentBubbles.forEach(adjacentBubble => {
           if (
@@ -110,6 +101,21 @@ export class BubbleAnimator {
           this.gameManager.getBubbleDestroyer().destroyBubble(bubble);
         } else {
           //console.log('No match - bubble stays in place');
+        }
+
+        if (
+          this.gameManager.getMaxBubbleRowIndex() -
+            this.gameManager.getMinBubbleRowIndex() +
+            1 <
+          this.gameManager.totalRows
+        ) {
+          this.gameManager
+            .getBubbleFactory()
+            .addNewRowsEfficient(
+              this.gameManager.totalRows -
+                (this.gameManager.getMaxBubbleRowIndex() -
+                  this.gameManager.getMinBubbleRowIndex())
+            );
         }
       },
       this.calculateAnimationTime() * 1000 + 50

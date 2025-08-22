@@ -16,7 +16,7 @@ export class BubbleFactory {
           this.createBubbles(i, j);
         }
       } else {
-        for (let j = 0; j <= this.gameManager.cols; j++) {
+        for (let j = 1; j < this.gameManager.cols; j++) {
           this.createBubbles(i, j);
         }
       }
