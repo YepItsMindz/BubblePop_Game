@@ -1,60 +1,53 @@
-import { Tween, Vec2, Vec3, view, Node, instantiate, nextPow2, path } from 'cc';
-import { BUBBLES_SIZE, MAP_FALL_SPEED } from './GameManager';
+import {
+  Tween,
+  Vec2,
+  Vec3,
+  view,
+  Node,
+  instantiate,
+  nextPow2,
+  path,
+  UITransform,
+} from 'cc';
+import { BUBBLES_SIZE, GameManager, MAP_FALL_SPEED } from './GameManager';
 import { bubblesPrefab } from './prefab/bubblesPrefab';
 
 export class BubbleAnimator {
-  private gameManager: any;
-  private bubbleColliderMap: Map<Node, Node> = new Map(); // Track which collider each bubble used
+  private gameManager: GameManager;
 
   constructor(gameManager: any) {
     this.gameManager = gameManager;
   }
 
   public movingBubble(bubble: Node, collider: Node): void {
-    this.bubbleColliderMap.set(bubble, collider);
     let lastPath = this.gameManager.path[this.gameManager.path.length - 1];
     let calculatedGridPos: { row: number; col: number } | null = null;
-    let mapX: number;
-    let mapY: number;
 
-    this.gameManager.bubblesArray.forEach(i => {
-      if (collider === i) {
-        const gridPos = this.newGridPosition(i, lastPath);
-        calculatedGridPos = gridPos;
+    const gridPos = this.newGridPosition(collider, lastPath);
+    calculatedGridPos = gridPos;
 
-        const bubbleComponent = bubble.getComponent(bubblesPrefab);
-        if (bubbleComponent) {
-          bubbleComponent.setGridPosition(gridPos.row, gridPos.col);
-          // console.log(
-          //   `Bubble assigned to grid position: row ${gridPos.row}, col ${gridPos.col}`
-          // );
-        }
+    const bubbleComponent = bubble.getComponent(bubblesPrefab);
+    if (bubbleComponent) {
+      bubbleComponent.setGridPosition(gridPos.row, gridPos.col);
+    }
 
-        mapY = gridPos.row * BUBBLES_SIZE * 0.85;
-        if (gridPos.row % 2 === 0) {
-          mapX = (gridPos.col - (this.gameManager.cols - 1) / 2) * BUBBLES_SIZE;
-        } else {
-          mapX =
-            (gridPos.col - (this.gameManager.cols - 1) / 2) * BUBBLES_SIZE -
-            BUBBLES_SIZE / 2;
-        }
+    let { posX, posY } = this.gameManager.gridIndexToPosition(
+      gridPos.row,
+      gridPos.col
+    );
+    // Special Case - handle screen boundaries
+    ({ lastPath, posX, posY } = this.handleScreenBoundaries(
+      bubble,
+      lastPath,
+      gridPos,
+      posX,
+      posY
+    ));
 
-        // Special Case - handle screen boundaries
-        ({ lastPath, mapX, mapY } = this.handleScreenBoundaries(
-          bubble,
-          lastPath,
-          gridPos,
-          mapX,
-          mapY
-        ));
-
-        bubble.setPosition(mapX, mapY);
-        lastPath = bubble.getWorldPosition();
-        bubble.setWorldPosition(
-          this.gameManager.startLinePos.getWorldPosition()
-        );
-      }
-    });
+    bubble.setPosition(posX, posY);
+    const worldPos = bubble.getWorldPosition();
+    lastPath = new Vec2(worldPos.x, worldPos.y);
+    bubble.setWorldPosition(this.gameManager.startLinePos.getWorldPosition());
 
     //Make the last path falling down with the map
     const mapMovementDuringFlight = this.gameManager.isMovingToMinLine
@@ -69,7 +62,7 @@ export class BubbleAnimator {
 
     setTimeout(
       () => {
-        bubble.setPosition(mapX, mapY);
+        bubble.setPosition(posX, posY);
         // Remove from shot bubbles set since it has now settled
         this.gameManager.shotBubbles.delete(bubble);
 
@@ -97,7 +90,6 @@ export class BubbleAnimator {
 
         if (hasMatch) {
           //console.log('Match found - destroying bubbles');
-          this.bubbleColliderMap.delete(bubble);
           this.gameManager.getBubbleDestroyer().destroyBubble(bubble);
         } else {
           //console.log('No match - bubble stays in place');
@@ -166,11 +158,11 @@ export class BubbleAnimator {
 
   public handleScreenBoundaries(
     bubble: Node,
-    lastPath: Vec3,
+    lastPath: Vec2,
     gridPos: { row: number; col: number },
-    mapX: number,
-    mapY: number
-  ): { lastPath: Vec3; mapX: number; mapY: number } {
+    posX: number,
+    posY: number
+  ): { lastPath: Vec2; posX: number; posY: number } {
     // Handle left boundary
     if (gridPos.col == 0 && gridPos.row % 2 == 1) {
       const positionLeft = [
@@ -185,13 +177,13 @@ export class BubbleAnimator {
         const isOccupied = this.isPositionOccupied(newRow, newCol);
         if (isOccupied) continue;
         if (!isOccupied) {
-          if (position.row == 0) mapX += BUBBLES_SIZE * position.col;
-          else mapX += BUBBLES_SIZE * position.col + BUBBLES_SIZE / 2;
-          mapY += BUBBLES_SIZE * position.row * 0.85;
+          if (position.row == 0) posX += BUBBLES_SIZE * position.col;
+          else posX += BUBBLES_SIZE * position.col + BUBBLES_SIZE / 2;
+          posY += BUBBLES_SIZE * position.row * 0.85;
           lastPath.x += BUBBLES_SIZE * position.col;
           lastPath.y += BUBBLES_SIZE * position.row * 0.85;
           bubble.getComponent(bubblesPrefab).setGridPosition(newRow, newCol);
-          return { lastPath, mapX, mapY };
+          return { lastPath, posX, posY };
         }
       }
     }
@@ -211,18 +203,18 @@ export class BubbleAnimator {
         const isOccupied = this.isPositionOccupied(newRow, newCol);
         if (isOccupied) continue;
         if (!isOccupied) {
-          if (position.row == 0) mapX += BUBBLES_SIZE * position.col;
-          else mapX += BUBBLES_SIZE * position.col - BUBBLES_SIZE / 2;
-          mapY += BUBBLES_SIZE * position.row * 0.85;
+          if (position.row == 0) posX += BUBBLES_SIZE * position.col;
+          else posX += BUBBLES_SIZE * position.col - BUBBLES_SIZE / 2;
+          posY += BUBBLES_SIZE * position.row * 0.85;
           lastPath.x += BUBBLES_SIZE * position.row;
           lastPath.y += BUBBLES_SIZE * position.col * 0.85;
           bubble.getComponent(bubblesPrefab).setGridPosition(newRow, newCol);
-          return { lastPath, mapX, mapY };
+          return { lastPath, posX, posY };
         }
       }
     }
 
-    return { lastPath, mapX, mapY };
+    return { lastPath, posX, posY };
   }
 
   public isPositionOccupied(row: number, col: number): boolean {
@@ -275,24 +267,19 @@ export class BubbleAnimator {
     for (const position of adjacentPositions) {
       const isOccupied = this.isPositionOccupied(position.row, position.col);
       if (!isOccupied) {
-        const worldY = position.row * BUBBLES_SIZE * 0.85;
-        let worldX;
-        if (position.row % 2 === 0) {
-          worldX =
-            (position.col - (this.gameManager.cols - 1) / 2) * BUBBLES_SIZE;
-        } else {
-          worldX =
-            (position.col - (this.gameManager.cols - 1) / 2) * BUBBLES_SIZE -
-            BUBBLES_SIZE / 2;
-        }
-        const tmp: Node = instantiate(this.gameManager.bubbles);
-        this.gameManager.node.addChild(tmp);
-        tmp.setPosition(worldX, worldY);
-        const dist = this.distance(
-          new Vec2(tmp.getWorldPosition().x, tmp.getWorldPosition().y),
-          pos
+        const { posX, posY } = this.gameManager.gridIndexToPosition(
+          position.row,
+          position.col
         );
-        this.gameManager.bubblePool.put(tmp);
+
+        const localPos = this.gameManager.node
+          .getComponent(UITransform)
+          .convertToNodeSpaceAR(new Vec3(pos.x, pos.y));
+        const dist = this.distance(
+          new Vec2(posX, posY),
+          new Vec2(localPos.x, localPos.y)
+        );
+
         if (minDist > dist) {
           minDist = dist;
           finalRowIndex = position.row;
@@ -341,9 +328,5 @@ export class BubbleAnimator {
 
   public getSpriteFrame(node: Node) {
     return node.getComponent(bubblesPrefab).bubbles.spriteFrame;
-  }
-
-  public cleanupBubbleCollider(bubble: Node): void {
-    this.bubbleColliderMap.delete(bubble);
   }
 }

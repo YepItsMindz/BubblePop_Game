@@ -39,8 +39,8 @@ export class GameManager extends Component {
   @property(Prefab)
   bubbles: Prefab = null;
 
-  @property(Prefab)
-  predictBubbles: Prefab = null;
+  @property(Node)
+  predictBubble: Node = null;
 
   @property(SpriteAtlas)
   spriteAtlas: SpriteAtlas = null;
@@ -165,9 +165,6 @@ export class GameManager extends Component {
     if (bubbleComponent) {
       bubbleComponent.setGridPosition(-1, -1);
     }
-
-    // Clean up any collider tracking in BubbleAnimator
-    this.bubbleAnimator.cleanupBubbleCollider(bubble);
 
     // Remove from tracking sets
     this.shotBubbles.delete(bubble);
@@ -324,6 +321,20 @@ export class GameManager extends Component {
     });
 
     return rowY;
+  }
+
+  public gridIndexToPosition(
+    rowIndex: number,
+    colIndex: number
+  ): { posX: number; posY: number } {
+    const posY = rowIndex * BUBBLES_SIZE * 0.85;
+    let posX;
+    if (rowIndex % 2 === 0) {
+      posX = (colIndex - (this.cols - 1) / 2) * BUBBLES_SIZE;
+    } else {
+      posX = (colIndex - (this.cols - 1) / 2) * BUBBLES_SIZE - BUBBLES_SIZE / 2;
+    }
+    return { posX, posY };
   }
 
   public moveMapToMinLine(): void {
