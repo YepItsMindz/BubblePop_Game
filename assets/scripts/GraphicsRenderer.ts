@@ -1,11 +1,13 @@
-import { Graphics, Color, Vec2, Node, Sprite, instantiate, Vec3 } from 'cc';
+import { Graphics, Color, Vec2, Node, Sprite, instantiate, Vec3, NodePool } from 'cc';
 
 export class GraphicsRenderer {
   private gameManager: any;
   private lineNodes: Node[] = [];
+  private graphicPool : NodePool = new NodePool();
 
   constructor(gameManager: any) {
     this.gameManager = gameManager;
+    this.graphicPool = new NodePool();
   }
 
   public createLineNode(): void {
@@ -65,8 +67,7 @@ export class GraphicsRenderer {
   private clearLineNodes(): void {
     this.lineNodes.forEach(node => {
       if (node && node.isValid) {
-        node.removeFromParent();
-        node.destroy();
+        this.graphicPool.put(node);
       }
     });
     this.lineNodes = [];

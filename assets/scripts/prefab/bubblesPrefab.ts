@@ -89,5 +89,7 @@ export class bubblesPrefab extends Component {
     }
   }
 
-  update(deltaTime: number) {}
+  update(deltaTime: number) {
+    
+  }
 }

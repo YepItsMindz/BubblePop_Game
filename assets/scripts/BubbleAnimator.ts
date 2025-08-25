@@ -292,7 +292,7 @@ export class BubbleAnimator {
           new Vec2(tmp.getWorldPosition().x, tmp.getWorldPosition().y),
           pos
         );
-        tmp.removeFromParent();
+        this.gameManager.bubblePool.put(tmp);
         if (minDist > dist) {
           minDist = dist;
           finalRowIndex = position.row;
