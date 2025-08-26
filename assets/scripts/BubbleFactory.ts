@@ -43,7 +43,7 @@ export class BubbleFactory {
 
           const bubbleComponent = node.getComponent(bubblesPrefab);
           bubbleComponent.setImage(sf);
-          bubbleComponent.setGridPosition(i, j);
+          bubbleComponent.setGridPosition(i, j, randomBallIndex);
 
           this.setOriginPos(node, i, j);
           newBubbles.push(node);
@@ -58,7 +58,7 @@ export class BubbleFactory {
 
           const bubbleComponent = node.getComponent(bubblesPrefab);
           bubbleComponent.setImage(sf);
-          bubbleComponent.setGridPosition(i, j);
+          bubbleComponent.setGridPosition(i, j, randomBallIndex);
 
           this.setOriginPos(node, i, j);
           if (j === 0 || j === this.gameManager.cols)
@@ -80,17 +80,11 @@ export class BubbleFactory {
     const node: Node = this.gameManager.getBubbleFromPool();
     let sf = null;
     const randomBallIndex = Math.floor(Math.random() * 3) + 4;
-    if (i % 2 === 0 && j === 0 && i % 2 === 0 && j === this.gameManager.cols) {
-      sf = this.gameManager.spriteAtlas.getSpriteFrame(`ball_0`);
-    } else {
-      sf = this.gameManager.spriteAtlas.getSpriteFrame(
-        `ball_${randomBallIndex}`
-      );
-    }
+    sf = this.gameManager.spriteAtlas.getSpriteFrame(`ball_${randomBallIndex}`);
 
     const bubbleComponent = node.getComponent(bubblesPrefab);
     bubbleComponent.setImage(sf);
-    bubbleComponent.setGridPosition(i, j);
+    bubbleComponent.setGridPosition(i, j, randomBallIndex);
 
     this.setOriginPos(node, i, j);
     this.gameManager.node.addChild(node);

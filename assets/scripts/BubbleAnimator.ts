@@ -11,6 +11,7 @@ import {
 } from 'cc';
 import { BUBBLES_SIZE, GameManager, MAP_FALL_SPEED } from './GameManager';
 import { bubblesPrefab } from './prefab/bubblesPrefab';
+import { destroyBubble } from './prefab/destroyBubble';
 
 export class BubbleAnimator {
   private gameManager: GameManager;
@@ -28,7 +29,11 @@ export class BubbleAnimator {
 
     const bubbleComponent = bubble.getComponent(bubblesPrefab);
     if (bubbleComponent) {
-      bubbleComponent.setGridPosition(gridPos.row, gridPos.col);
+      bubbleComponent.setGridPosition(
+        gridPos.row,
+        gridPos.col,
+        bubbleComponent.bubbleIndex
+      );
     }
 
     let { posX, posY } = this.gameManager.gridIndexToPosition(
@@ -92,7 +97,41 @@ export class BubbleAnimator {
           //console.log('Match found - destroying bubbles');
           this.gameManager.getBubbleDestroyer().destroyBubble(bubble);
         } else {
-          //console.log('No match - bubble stays in place');
+          if (bubble.getComponent(bubblesPrefab).bubbleIndex == 10) {
+            this.gameManager.returnBubbleToPool(bubble);
+            const bubbleToDestroy = [];
+            this.gameManager.bubblesArray.forEach(bb => {
+              if (
+                bb.getComponent(bubblesPrefab).getRowIndex() ==
+                collider.getComponent(bubblesPrefab).getRowIndex()
+              ) {
+                bubbleToDestroy.push(bb);
+              }
+            });
+            this.gameManager
+              .getFallingBubbleManager()
+              .animateFallingBubbles(bubbleToDestroy);
+            this.gameManager.getFallingBubbleManager().checkForFallingBubbles();
+          }
+
+          // if (bubble.getComponent(bubblesPrefab).bubbleIndex == 11) {
+          //   this.gameManager.returnBubbleToPool(bubble);
+          //   const bubbleToDestroy = [];
+          //   this.gameManager.bubblesArray.forEach(bb => {
+          //     const bbc = bb.getComponent(bubblesPrefab);
+          //     const cc = collider.getComponent(bubblesPrefab);
+          //     if (
+          //       Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 2 &&
+          //       Math.abs(bbc.getColIndex() - cc.getColIndex()) <= 1
+          //     ) {
+          //       bubbleToDestroy.push(bb);
+          //     }
+          //   });
+          //   this.gameManager
+          //     .getFallingBubbleManager()
+          //     .animateFallingBubbles(bubbleToDestroy);
+          //   this.gameManager.getFallingBubbleManager().checkForFallingBubbles();
+          // }
         }
 
         if (
@@ -182,7 +221,13 @@ export class BubbleAnimator {
           posY += BUBBLES_SIZE * position.row * 0.85;
           lastPath.x += BUBBLES_SIZE * position.col;
           lastPath.y += BUBBLES_SIZE * position.row * 0.85;
-          bubble.getComponent(bubblesPrefab).setGridPosition(newRow, newCol);
+          bubble
+            .getComponent(bubblesPrefab)
+            .setGridPosition(
+              newRow,
+              newCol,
+              bubble.getComponent(bubblesPrefab).bubbleIndex
+            );
           return { lastPath, posX, posY };
         }
       }
@@ -208,7 +253,13 @@ export class BubbleAnimator {
           posY += BUBBLES_SIZE * position.row * 0.85;
           lastPath.x += BUBBLES_SIZE * position.row;
           lastPath.y += BUBBLES_SIZE * position.col * 0.85;
-          bubble.getComponent(bubblesPrefab).setGridPosition(newRow, newCol);
+          bubble
+            .getComponent(bubblesPrefab)
+            .setGridPosition(
+              newRow,
+              newCol,
+              bubble.getComponent(bubblesPrefab).bubbleIndex
+            );
           return { lastPath, posX, posY };
         }
       }

@@ -24,8 +24,6 @@ export class BubbleDestroyer {
       bubblesToDestroy
     );
 
-    const firstBubble = bubblesToDestroy[0];
-
     // Calculate CENTER of the bubble group for better explosion effect
     let centerX = 0;
     let centerY = 0;
@@ -88,9 +86,7 @@ export class BubbleDestroyer {
       });
 
       this.gameManager.getFallingBubbleManager().checkForFallingBubbles();
-    } else {
-      //console.log(`Only ${bubblesToDestroy.length} connected bubbles found, not enough to destroy`);
-    }
+    } 
   }
 
   public findConnectedBubbles(

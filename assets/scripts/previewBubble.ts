@@ -45,6 +45,8 @@ export class PreviewBubble extends Component {
         `ball_${this.currentBubbleIndex}`
       );
       this.currentBubble.getComponent(bubblesPrefab).setImage(sf);
+      this.currentBubble.getComponent(bubblesPrefab).bubbleIndex =
+        this.currentBubbleIndex;
       this.node.addChild(this.currentBubble);
       this.currentBubble.setWorldPosition(this.curBubble.getWorldPosition());
 
@@ -54,6 +56,8 @@ export class PreviewBubble extends Component {
         `ball_${this.nextBubbleIndex}`
       );
       this.previewBubble.getComponent(bubblesPrefab).setImage(sf2);
+      this.previewBubble.getComponent(bubblesPrefab).bubbleIndex =
+        this.nextBubbleIndex;
       this.node.addChild(this.previewBubble);
       this.previewBubble.setWorldPosition(this.preBubble.getWorldPosition());
     }
@@ -66,12 +70,16 @@ export class PreviewBubble extends Component {
         `ball_${this.currentBubbleIndex}`
       );
       this.currentBubble.getComponent(bubblesPrefab).setImage(sf);
+      this.currentBubble.getComponent(bubblesPrefab).bubbleIndex =
+        this.currentBubbleIndex;
 
       this.nextBubbleIndex = Math.floor(Math.random() * 3) + 4;
       const sf2 = this.spriteAtlas.getSpriteFrame(
         `ball_${this.nextBubbleIndex}`
       );
       this.previewBubble.getComponent(bubblesPrefab).setImage(sf2);
+      this.previewBubble.getComponent(bubblesPrefab).bubbleIndex =
+        this.nextBubbleIndex;
     }
   }
 
@@ -84,9 +92,23 @@ export class PreviewBubble extends Component {
       `ball_${this.currentBubbleIndex}`
     );
     this.currentBubble.getComponent(bubblesPrefab).setImage(sf);
+    this.currentBubble.getComponent(bubblesPrefab).bubbleIndex =
+      this.currentBubbleIndex;
 
     const sf2 = this.spriteAtlas.getSpriteFrame(`ball_${this.nextBubbleIndex}`);
     this.previewBubble.getComponent(bubblesPrefab).setImage(sf2);
+    this.previewBubble.getComponent(bubblesPrefab).bubbleIndex =
+      this.nextBubbleIndex;
+  }
+
+  lineBubbleBuffer() {
+    this.currentBubbleIndex = 10;
+    const sf = this.spriteAtlas.getSpriteFrame(
+      `ball_${this.currentBubbleIndex}`
+    );
+    this.currentBubble.getComponent(bubblesPrefab).setImage(sf);
+    this.currentBubble.getComponent(bubblesPrefab).bubbleIndex =
+      this.currentBubbleIndex;
   }
 
   start() {}

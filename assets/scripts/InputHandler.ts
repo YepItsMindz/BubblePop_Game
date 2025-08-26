@@ -56,8 +56,10 @@ export class InputHandler {
     const sf = this.gameManager.spriteAtlas.getSpriteFrame(
       `ball_${currentIndex}`
     );
-    bubble.getComponent(bubblesPrefab).setImage(sf);
-    bubble.getComponent(bubblesPrefab).disableCollider();
+    const bubbleComponent = bubble.getComponent(bubblesPrefab);
+    bubbleComponent.setImage(sf);
+    bubbleComponent.disableCollider();
+    bubbleComponent.bubbleIndex = currentIndex;
 
     this.gameManager.shotBubbles.add(bubble);
     this.gameManager.bubblesArray.push(bubble);
@@ -154,7 +156,7 @@ export class InputHandler {
     const point = validResult.point;
 
     this.gameManager.bubblesArray.forEach(x => {
-      if (x === collider.node && !this.gameManager.shotBubbles.has(x)) {
+      if (x == collider.node && !this.gameManager.shotBubbles.has(x)) {
         x.getComponent(bubblesPrefab).glow.active = true;
       } else {
         x.getComponent(bubblesPrefab).glow.active = false;

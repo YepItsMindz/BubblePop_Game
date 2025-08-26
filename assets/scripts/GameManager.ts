@@ -100,7 +100,7 @@ export class GameManager extends Component {
   public raycastActive: boolean = true;
   public currentMousePosition: Vec2 = new Vec2(0, 0);
   private raycastUpdateTimer: number = 0;
-  private raycastUpdateInterval: number = 0.05;
+  private raycastUpdateInterval: number = 0.1;
 
   // Component references
   private bubbleFactory: BubbleFactory;
@@ -146,7 +146,7 @@ export class GameManager extends Component {
     // Reset grid position and ensure collider is enabled
     const bubbleComponent = bubble.getComponent(bubblesPrefab);
     if (bubbleComponent) {
-      bubbleComponent.setGridPosition(-1, -1); // Reset to indicate not in grid yet
+      bubbleComponent.setGridPosition(-1, -1, -1); // Reset to indicate not in grid yet
       bubbleComponent.enableCollider();
     }
 
@@ -163,7 +163,7 @@ export class GameManager extends Component {
     // Reset grid position to default values
     const bubbleComponent = bubble.getComponent(bubblesPrefab);
     if (bubbleComponent) {
-      bubbleComponent.setGridPosition(-1, -1);
+      bubbleComponent.setGridPosition(-1, -1, -1);
     }
 
     // Remove from tracking sets
@@ -422,12 +422,23 @@ export class GameManager extends Component {
     this.path.length = 0;
     this.inputHandler.createRayToMouse(event);
     this.inputHandler.predictedBubble(this.lastCollider);
+    if (this.previewBubbleComponent.currentBubbleIndex == 10) {
+      this.bubblesArray.forEach(x => {
+        if (
+          x.getComponent(bubblesPrefab).rowIndex ===
+            this.lastCollider.getComponent(bubblesPrefab).rowIndex &&
+          !this.shotBubbles.has(x)
+        ) {
+          x.getComponent(bubblesPrefab).glow.active = true;
+        }
+      });
+    }
   }
 
   update(deltaTime: number): void {
     if (!this.gameActive) return;
     //console.log(this.bubblePool);
-    console.log(this.getMaxBubbleRowIndex(), this.getMinBubbleRowIndex());
+    //console.log(this.getMaxBubbleRowIndex(), this.getMinBubbleRowIndex());
 
     if (this.raycastActive && this.currentMousePosition) {
       this.raycastUpdateTimer += deltaTime;

@@ -5,6 +5,7 @@ import {
   Sprite,
   SpriteFrame,
   Collider2D,
+  Label,
 } from 'cc';
 import { GameManager } from '../GameManager';
 const { ccclass, property } = _decorator;
@@ -17,9 +18,13 @@ export class bubblesPrefab extends Component {
   @property(Node)
   glow: Node = null;
 
+  @property(Label)
+  label: Label = null;
+
   // Store the grid position
   public rowIndex: number = -1;
   public colIndex: number = -1;
+  public bubbleIndex: number = -1;
 
   // Flag for invisible placeholder bubbles
   public isInvisible: boolean = false;
@@ -28,9 +33,18 @@ export class bubblesPrefab extends Component {
     this.bubbles.spriteFrame = sf;
   }
 
-  setGridPosition(row: number, col: number) {
+  getSF() {
+    return this.bubbles.spriteFrame;
+  }
+
+  setGridPosition(row: number, col: number, id: number) {
     this.rowIndex = row;
     this.colIndex = col;
+    this.bubbleIndex = id;
+  }
+
+  getBubbleIndex(): number {
+    return this.bubbleIndex;
   }
 
   getRowIndex(): number {
@@ -90,6 +104,6 @@ export class bubblesPrefab extends Component {
   }
 
   update(deltaTime: number) {
-    
+    //this.label.string = this.colIndex.toString();
   }
 }
