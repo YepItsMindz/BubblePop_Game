@@ -20,13 +20,24 @@
   "physics": {
     "collisionGroups": [
       {
-        "index": 1,
-        "name": "Destroy"
+        "index": 2,
+        "name": "Wall"
+      },
+      {
+        "index": 3,
+        "name": "Bubble"
+      },
+      {
+        "index": 4,
+        "name": "ScoreHole"
       }
     ],
     "collisionMatrix": {
       "0": 1,
-      "1": 2
+      "1": 2,
+      "2": 8,
+      "3": 4,
+      "4": 0
     }
   },
   "layer": [
@@ -37,6 +48,10 @@
     {
       "name": "Pan",
       "value": 2
+    },
+    {
+      "name": "Wall",
+      "value": 4
     }
   ]
 }

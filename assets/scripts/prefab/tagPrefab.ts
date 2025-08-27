@@ -32,8 +32,8 @@ export class tagPrefab extends Component {
   start() {
     // Initialize the score pool
     this.scorePool = new NodePool();
-    // PhysicsSystem2D.instance.enable = true;
-    // PhysicsSystem2D.instance.debugDrawFlags = EPhysics2DDrawFlags.Shape;
+    PhysicsSystem2D.instance.enable = true;
+    PhysicsSystem2D.instance.debugDrawFlags = EPhysics2DDrawFlags.Shape;
 
     let collider = this.getComponent(BoxCollider2D);
     if (collider) {
