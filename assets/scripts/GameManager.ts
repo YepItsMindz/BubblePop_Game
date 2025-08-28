@@ -31,7 +31,7 @@ import { bubblesPrefab } from './prefab/bubblesPrefab';
 
 const { ccclass, property } = _decorator;
 
-export const BUBBLES_SIZE = 68;
+export const BUBBLES_SIZE = 68 * 0.625;
 export const MAP_FALL_SPEED = 20; // Units per second
 
 @ccclass('GameManager')
@@ -79,7 +79,7 @@ export class GameManager extends Component {
   raySf: SpriteFrame = null;
 
   public rows: number = 20;
-  public cols: number = 9;
+  public cols: number = 13;
   public totalRows: number = 20;
   public bubblesArray: Node[] = [];
   public groupBubbles: Node[] = [];

@@ -8,6 +8,8 @@ import {
   nextPow2,
   path,
   UITransform,
+  PhysicsSystem2D,
+  ERaycast2DType,
 } from 'cc';
 import { BUBBLES_SIZE, GameManager, MAP_FALL_SPEED } from './GameManager';
 import { bubblesPrefab } from './prefab/bubblesPrefab';
@@ -95,43 +97,22 @@ export class BubbleAnimator {
 
         if (hasMatch) {
           //console.log('Match found - destroying bubbles');
-          this.gameManager.getBubbleDestroyer().destroyBubble(bubble);
+          this.gameManager.getBubbleDestroyer().destroyBubble(bubble, false);
         } else {
-          if (bubble.getComponent(bubblesPrefab).bubbleIndex == 10) {
-            this.gameManager.returnBubbleToPool(bubble);
-            const bubbleToDestroy = [];
-            this.gameManager.bubblesArray.forEach(bb => {
-              if (
-                bb.getComponent(bubblesPrefab).getRowIndex() ==
-                collider.getComponent(bubblesPrefab).getRowIndex()
-              ) {
-                bubbleToDestroy.push(bb);
-              }
-            });
-            this.gameManager
-              .getFallingBubbleManager()
-              .animateFallingBubbles(bubbleToDestroy);
-            this.gameManager.getFallingBubbleManager().checkForFallingBubbles();
+          switch (bubble.getComponent(bubblesPrefab).bubbleIndex) {
+            case 8:
+              this.fireworkBuffer(bubble);
+              break;
+            case 9:
+              this.bombBuffer(bubble, collider);
+              break;
+            case 10:
+              this.lineBubbleBuffer(bubble, collider);
+              break;
+            case 11:
+              this.rainbowBubbleBuffer(bubble);
+              break;
           }
-
-          // if (bubble.getComponent(bubblesPrefab).bubbleIndex == 11) {
-          //   this.gameManager.returnBubbleToPool(bubble);
-          //   const bubbleToDestroy = [];
-          //   this.gameManager.bubblesArray.forEach(bb => {
-          //     const bbc = bb.getComponent(bubblesPrefab);
-          //     const cc = collider.getComponent(bubblesPrefab);
-          //     if (
-          //       Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 2 &&
-          //       Math.abs(bbc.getColIndex() - cc.getColIndex()) <= 1
-          //     ) {
-          //       bubbleToDestroy.push(bb);
-          //     }
-          //   });
-          //   this.gameManager
-          //     .getFallingBubbleManager()
-          //     .animateFallingBubbles(bubbleToDestroy);
-          //   this.gameManager.getFallingBubbleManager().checkForFallingBubbles();
-          // }
         }
 
         if (
@@ -155,6 +136,109 @@ export class BubbleAnimator {
     if (this.gameManager.previewBubbleComponent) {
       this.gameManager.previewBubbleComponent.updateShootBubble();
     }
+  }
+
+  lineBubbleBuffer(bubble: Node, collider: Node) {
+    this.gameManager.returnBubbleToPool(bubble);
+    const bubbleToDestroy = [];
+    this.gameManager.bubblesArray.forEach(bb => {
+      if (
+        bb.getComponent(bubblesPrefab).getRowIndex() ==
+        collider.getComponent(bubblesPrefab).getRowIndex()
+      ) {
+        bubbleToDestroy.push(bb);
+      }
+    });
+    this.gameManager
+      .getFallingBubbleManager()
+      .animateFallingBubbles(bubbleToDestroy);
+    this.gameManager.getFallingBubbleManager().checkForFallingBubbles();
+  }
+
+  bombBuffer(bubble: Node, collider: Node) {
+    this.gameManager.returnBubbleToPool(bubble);
+    const bubbleToDestroy = [];
+    this.gameManager.bubblesArray.forEach(bb => {
+      const bbc = bb.getComponent(bubblesPrefab);
+      const cc = collider.getComponent(bubblesPrefab);
+      if (
+        Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 2 &&
+        Math.abs(bbc.getColIndex() - cc.getColIndex()) <= 1
+      ) {
+        bubbleToDestroy.push(bb);
+      }
+      if (cc.getRowIndex() % 2 == 0) {
+        if (
+          Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 1 &&
+          (Math.abs(bbc.getColIndex() - cc.getColIndex()) < 2 ||
+            bbc.getColIndex() - cc.getColIndex() == 2)
+        ) {
+          bubbleToDestroy.push(bb);
+        }
+      } else {
+        if (
+          Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 1 &&
+          (Math.abs(bbc.getColIndex() - cc.getColIndex()) < 2 ||
+            bbc.getColIndex() - cc.getColIndex() == -2)
+        ) {
+          bubbleToDestroy.push(bb);
+        }
+      }
+
+      if (
+        Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 0 &&
+        Math.abs(bbc.getColIndex() - cc.getColIndex()) <= 2
+      ) {
+        bubbleToDestroy.push(bb);
+      }
+    });
+    this.gameManager
+      .getFallingBubbleManager()
+      .animateFallingBubbles(bubbleToDestroy);
+    this.gameManager.getFallingBubbleManager().checkForFallingBubbles();
+  }
+
+  fireworkBuffer(bubble: Node) {
+    this.gameManager.returnBubbleToPool(bubble);
+    const mousePos = this.gameManager.currentMousePosition;
+    const ray = this.gameManager.startLinePos.getWorldPosition();
+    const rayOrigin = new Vec2(ray.x, ray.y);
+    const direction = new Vec2();
+    Vec2.subtract(direction, mousePos, rayOrigin);
+    direction.normalize();
+    const angle = Math.atan2(direction.y, direction.x);
+    const lineLength = 1500;
+    const sceen = view.getVisibleSize();
+    const endPoint = new Vec2(
+      rayOrigin.x + Math.cos(angle) * lineLength,
+      rayOrigin.y + Math.sin(angle) * lineLength
+    );
+    const results = PhysicsSystem2D.instance.raycast(
+      rayOrigin,
+      endPoint,
+      ERaycast2DType.All
+    );
+    const bubbleToDestroy = [];
+    results.forEach(r => {
+      if (r.collider.node.layer == 1) bubbleToDestroy.push(r.collider.node);
+    });
+    this.gameManager
+      .getFallingBubbleManager()
+      .animateFallingBubbles(bubbleToDestroy);
+    this.gameManager.getFallingBubbleManager().checkForFallingBubbles();
+  }
+
+  rainbowBubbleBuffer(bubble: Node) {
+    const bubbleComponent = bubble.getComponent(bubblesPrefab);
+    const adjBubble = this.getAdjacentBubbles(
+      bubbleComponent.rowIndex,
+      bubbleComponent.colIndex
+    );
+    this.gameManager.returnBubbleToPool(bubble);
+    adjBubble.forEach(adj => {
+      this.gameManager.getBubbleDestroyer().destroyBubble(adj, true);
+    });
+    this.gameManager.getFallingBubbleManager().checkForFallingBubbles();
   }
 
   public animateBubble(bubble: Node): void {

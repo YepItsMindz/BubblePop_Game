@@ -128,32 +128,50 @@ export class InputHandler {
       rayOrigin.y + Math.sin(angle) * lineLength
     );
 
-    const mask = (1 << 0) | (1 << 2) | (1 << 3);
+    //const mask = (1 << 0) | (1 << 2) | (1 << 3);
     const results = PhysicsSystem2D.instance.raycast(
       rayOrigin,
       endPoint,
-      ERaycast2DType.Closest,
-      mask
+      ERaycast2DType.All
+      //mask
     );
 
     if (results.length === 0) {
       return;
     }
-    for (let r of results) {
-      const node = r.collider.node;
-      console.log(
-        'Hit node:',
-        node.name,
-        ' Group:',
-        r.collider.group,
-        ' Layer:',
-        node.layer
-      );
-      console.log(r.point);
+
+    const sortedResults = Array.from(results).sort((a, b) => {
+      const distanceA = Vec2.distance(rayOrigin, a.point);
+      const distanceB = Vec2.distance(rayOrigin, b.point);
+      return distanceA - distanceB;
+    });
+
+    const validResult = sortedResults.find(result => {
+      return !this.isScoreHoleOrChild(result.collider.node);
+    });
+
+    if (!validResult) {
+      return;
     }
 
-    const collider = results[0].collider;
-    const point = results[0].point;
+    const collider = validResult.collider;
+    const point = validResult.point;
+
+    // for (let r of results) {
+    //   const node = r.collider.node;
+    //   console.log(
+    //     'Hit node:',
+    //     node.name,
+    //     ' Group:',
+    //     r.collider.group,
+    //     ' Layer:',
+    //     node.layer
+    //   );
+    //   console.log(r.point);
+    // }
+
+    // const collider = results[0].collider;
+    // const point = results[0].point;
 
     this.gameManager.bubblesArray.forEach(x => {
       if (x == collider.node && !this.gameManager.shotBubbles.has(x)) {
@@ -169,7 +187,7 @@ export class InputHandler {
     ) {
       this.gameManager.path.push(point);
       this.gameManager.getGraphicsRenderer().drawLine(rayOrigin, endPoint);
-      //this.reflectRay(rayOrigin, point);
+      this.reflectRay(rayOrigin, point);
     } else {
       this.gameManager.getGraphicsRenderer().drawLine(rayOrigin, point);
       this.gameManager.path.push(point);
@@ -191,20 +209,37 @@ export class InputHandler {
       end.y + Math.sin(angle) * lineLength
     );
 
-    const mask = (1 << 0) | (1 << 3) | (1 << 2);
+    //const mask = (1 << 0) | (1 << 3) | (1 << 2);
     const results = PhysicsSystem2D.instance.raycast(
       end,
       endPoint,
-      ERaycast2DType.Closest,
-      mask
+      ERaycast2DType.Closest
+      //mask
     );
 
     if (results.length === 0) {
       return;
     }
 
-    const collider = results[0].collider;
-    const point = results[0].point;
+    const sortedResults = Array.from(results).sort((a, b) => {
+      const distanceA = Vec2.distance(end, a.point);
+      const distanceB = Vec2.distance(end, b.point);
+      return distanceA - distanceB;
+    });
+
+    const validResult = sortedResults.find(result => {
+      return !this.isScoreHoleOrChild(result.collider.node);
+    });
+
+    if (!validResult) {
+      return;
+    }
+
+    const collider = validResult.collider;
+    const point = validResult.point;
+
+    // const collider = results[0].collider;
+    // const point = results[0].point;
 
     this.gameManager.bubblesArray.forEach(x => {
       if (x == collider.node && !this.gameManager.shotBubbles.has(x)) {
@@ -226,5 +261,21 @@ export class InputHandler {
       this.gameManager.path.push(point);
       this.gameManager.lastCollider = collider.node;
     }
+  }
+
+  private isScoreHoleOrChild(node: Node): boolean {
+    if (node === this.gameManager.scoreHole) {
+      return true;
+    }
+
+    let currentParent = node.parent;
+    while (currentParent) {
+      if (currentParent === this.gameManager.scoreHole) {
+        return true;
+      }
+      currentParent = currentParent.parent;
+    }
+
+    return false;
   }
 }

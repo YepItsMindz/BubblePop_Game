@@ -111,6 +111,36 @@ export class PreviewBubble extends Component {
       this.currentBubbleIndex;
   }
 
+  bombBuffer() {
+    this.currentBubbleIndex = 9;
+    const sf = this.spriteAtlas.getSpriteFrame(
+      `ball_${this.currentBubbleIndex}`
+    );
+    this.currentBubble.getComponent(bubblesPrefab).setImage(sf);
+    this.currentBubble.getComponent(bubblesPrefab).bubbleIndex =
+      this.currentBubbleIndex;
+  }
+
+  rainbowBubbleBuffer() {
+    this.currentBubbleIndex = 11;
+    const sf = this.spriteAtlas.getSpriteFrame(
+      `ball_${this.currentBubbleIndex}`
+    );
+    this.currentBubble.getComponent(bubblesPrefab).setImage(sf);
+    this.currentBubble.getComponent(bubblesPrefab).bubbleIndex =
+      this.currentBubbleIndex;
+  }
+
+  fireworkBuffer() {
+    this.currentBubbleIndex = 8;
+    const sf = this.spriteAtlas.getSpriteFrame(
+      `ball_${this.currentBubbleIndex}`
+    );
+    this.currentBubble.getComponent(bubblesPrefab).setImage(sf);
+    this.currentBubble.getComponent(bubblesPrefab).bubbleIndex =
+      this.currentBubbleIndex;
+  }
+
   start() {}
 
   update(deltaTime: number) {

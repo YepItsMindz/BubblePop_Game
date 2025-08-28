@@ -10,7 +10,7 @@ export class BubbleDestroyer {
     this.gameManager = gameManager;
   }
 
-  public destroyBubble(bubble: Node): void {
+  public destroyBubble(bubble: Node, buffer: boolean): void {
     if (!bubble.active) return;
 
     const visitedBubbles = new Set<Node>();
@@ -34,7 +34,7 @@ export class BubbleDestroyer {
     centerX /= bubblesToDestroy.length;
     centerY /= bubblesToDestroy.length;
 
-    if (bubblesToDestroy.length >= 3) {
+    if (bubblesToDestroy.length >= 3 || buffer == true) {
       //console.log(`Destroying ${bubblesToDestroy.length} connected bubbles`);
       bubblesToDestroy.forEach(bubbleToDestroy => {
         if (bubbleToDestroy.active) {
