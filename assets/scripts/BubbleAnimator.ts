@@ -208,7 +208,6 @@ export class BubbleAnimator {
     direction.normalize();
     const angle = Math.atan2(direction.y, direction.x);
     const lineLength = 1500;
-    const sceen = view.getVisibleSize();
     const endPoint = new Vec2(
       rayOrigin.x + Math.cos(angle) * lineLength,
       rayOrigin.y + Math.sin(angle) * lineLength

@@ -32,7 +32,7 @@ import { bubblesPrefab } from './prefab/bubblesPrefab';
 const { ccclass, property } = _decorator;
 
 export const BUBBLES_SIZE = 68 * 0.625;
-export const MAP_FALL_SPEED = 20; // Units per second
+export const MAP_FALL_SPEED = 15; // Units per second
 
 @ccclass('GameManager')
 export class GameManager extends Component {
@@ -88,7 +88,6 @@ export class GameManager extends Component {
   public screenSize = view.getVisibleSize();
   public lastCollider: Node = null;
   public velocity: number = 1500;
-  public currentPredictedBubble: Node = null;
 
   // Game state variables
   public gameActive: boolean = true;
@@ -101,6 +100,8 @@ export class GameManager extends Component {
   public currentMousePosition: Vec2 = new Vec2(0, 0);
   private raycastUpdateTimer: number = 0;
   private raycastUpdateInterval: number = 0.1;
+  public predictCol: number;
+  public predictRow: number;
 
   // Component references
   private bubbleFactory: BubbleFactory;
@@ -422,23 +423,12 @@ export class GameManager extends Component {
     this.path.length = 0;
     this.inputHandler.createRayToMouse(event);
     this.inputHandler.predictedBubble(this.lastCollider);
-    if (this.previewBubbleComponent.currentBubbleIndex == 10) {
-      this.bubblesArray.forEach(x => {
-        if (
-          x.getComponent(bubblesPrefab).rowIndex ===
-            this.lastCollider.getComponent(bubblesPrefab).rowIndex &&
-          !this.shotBubbles.has(x)
-        ) {
-          x.getComponent(bubblesPrefab).glow.active = true;
-        }
-      });
-    }
   }
 
   update(deltaTime: number): void {
     if (!this.gameActive) return;
     //console.log(this.bubblePool);
-    //console.log(this.getMaxBubbleRowIndex(), this.getMinBubbleRowIndex());
+    console.log(this.getMaxBubbleRowIndex(), this.getMinBubbleRowIndex());
 
     if (this.raycastActive && this.currentMousePosition) {
       this.raycastUpdateTimer += deltaTime;

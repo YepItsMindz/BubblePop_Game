@@ -1,9 +1,18 @@
-import { Graphics, Color, Vec2, Node, Sprite, instantiate, Vec3, NodePool } from 'cc';
+import {
+  Graphics,
+  Color,
+  Vec2,
+  Node,
+  Sprite,
+  instantiate,
+  Vec3,
+  NodePool,
+} from 'cc';
 
 export class GraphicsRenderer {
   private gameManager: any;
   private lineNodes: Node[] = [];
-  private graphicPool : NodePool = new NodePool();
+  private graphicPool: NodePool = new NodePool();
 
   constructor(gameManager: any) {
     this.gameManager = gameManager;
@@ -25,8 +34,8 @@ export class GraphicsRenderer {
 
     const normalizedDirection = direction.normalize();
 
-    const dotSpacing = 30;
-    const dotSize = 30;
+    const dotSpacing = 35;
+    const dotSize = 20;
     const numDots = Math.floor(length / dotSpacing);
 
     for (let i = 0; i <= numDots; i++) {

@@ -6,6 +6,7 @@ import {
   Vec2,
   Node,
   Vec3,
+  Sprite,
 } from 'cc';
 import { bubblesPrefab } from './prefab/bubblesPrefab';
 import { GameManager, MAP_FALL_SPEED, BUBBLES_SIZE } from './GameManager';
@@ -103,6 +104,8 @@ export class InputHandler {
       //     posY
       //   ));
       this.gameManager.predictBubble.setPosition(posX, posY);
+      this.gameManager.predictRow = gridPos.row;
+      this.gameManager.predictCol = gridPos.col;
     }
   }
 
@@ -173,14 +176,6 @@ export class InputHandler {
     // const collider = results[0].collider;
     // const point = results[0].point;
 
-    this.gameManager.bubblesArray.forEach(x => {
-      if (x == collider.node && !this.gameManager.shotBubbles.has(x)) {
-        x.getComponent(bubblesPrefab).glow.active = true;
-      } else {
-        x.getComponent(bubblesPrefab).glow.active = false;
-      }
-    });
-
     if (
       collider.node === this.gameManager.leftWall ||
       collider.node === this.gameManager.rightWall
@@ -189,6 +184,10 @@ export class InputHandler {
       this.gameManager.getGraphicsRenderer().drawLine(rayOrigin, endPoint);
       this.reflectRay(rayOrigin, point);
     } else {
+      this.glowActivation(
+        this.gameManager.previewBubbleComponent.currentBubbleIndex,
+        collider.node
+      );
       this.gameManager.getGraphicsRenderer().drawLine(rayOrigin, point);
       this.gameManager.path.push(point);
       this.gameManager.lastCollider = collider.node;
@@ -241,14 +240,6 @@ export class InputHandler {
     // const collider = results[0].collider;
     // const point = results[0].point;
 
-    this.gameManager.bubblesArray.forEach(x => {
-      if (x == collider.node && !this.gameManager.shotBubbles.has(x)) {
-        x.getComponent(bubblesPrefab).glow.active = true;
-      } else {
-        x.getComponent(bubblesPrefab).glow.active = false;
-      }
-    });
-
     if (
       collider.node === this.gameManager.leftWall ||
       collider.node === this.gameManager.rightWall
@@ -257,6 +248,10 @@ export class InputHandler {
       this.gameManager.path.push(point);
       this.reflectRay(end, point);
     } else {
+      this.glowActivation(
+        this.gameManager.previewBubbleComponent.currentBubbleIndex,
+        collider.node
+      );
       this.gameManager.getGraphicsRenderer().drawLine(end, point);
       this.gameManager.path.push(point);
       this.gameManager.lastCollider = collider.node;
@@ -277,5 +272,115 @@ export class InputHandler {
     }
 
     return false;
+  }
+
+  glowActivation(currBubIndex: number, collider: Node) {
+    this.gameManager.bubblesArray.forEach(x => {
+      x.getComponent(bubblesPrefab).glow.active = false;
+    });
+    if (currBubIndex <= 7) {
+      if (collider) collider.getComponent(bubblesPrefab).glow.active = true;
+    }
+    if (currBubIndex == 8) {
+      const mousePos = this.gameManager.currentMousePosition;
+      const ray = this.gameManager.startLinePos.getWorldPosition();
+      const rayOrigin = new Vec2(ray.x, ray.y);
+      const direction = new Vec2();
+      Vec2.subtract(direction, mousePos, rayOrigin);
+      direction.normalize();
+      const angle = Math.atan2(direction.y, direction.x);
+      const lineLength = 1500;
+      // const sceen = view.getVisibleSize();
+      const endPoint = new Vec2(
+        rayOrigin.x + Math.cos(angle) * lineLength,
+        rayOrigin.y + Math.sin(angle) * lineLength
+      );
+      const results = PhysicsSystem2D.instance.raycast(
+        rayOrigin,
+        endPoint,
+        ERaycast2DType.All
+      );
+      results.forEach(r => {
+        if (r.collider.node.layer == 1)
+          r.collider.node.getComponent(bubblesPrefab).glow.active = true;
+      });
+    }
+    if (currBubIndex == 9) {
+      const bubbleToDestroy = [];
+      this.gameManager.bubblesArray.forEach(bb => {
+        const bbc = bb.getComponent(bubblesPrefab);
+        const cc = collider.getComponent(bubblesPrefab);
+        if (
+          Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 2 &&
+          Math.abs(bbc.getColIndex() - cc.getColIndex()) <= 1
+        ) {
+          bubbleToDestroy.push(bb);
+        }
+        if (cc.getRowIndex() % 2 == 0) {
+          if (
+            Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 1 &&
+            (Math.abs(bbc.getColIndex() - cc.getColIndex()) < 2 ||
+              bbc.getColIndex() - cc.getColIndex() == 2)
+          ) {
+            bubbleToDestroy.push(bb);
+          }
+        } else {
+          if (
+            Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 1 &&
+            (Math.abs(bbc.getColIndex() - cc.getColIndex()) < 2 ||
+              bbc.getColIndex() - cc.getColIndex() == -2)
+          ) {
+            bubbleToDestroy.push(bb);
+          }
+        }
+
+        if (
+          Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 0 &&
+          Math.abs(bbc.getColIndex() - cc.getColIndex()) <= 2
+        ) {
+          bubbleToDestroy.push(bb);
+        }
+      });
+      bubbleToDestroy.forEach(bb => {
+        bb.getComponent(bubblesPrefab).glow.active = true;
+      });
+    }
+    if (currBubIndex == 10) {
+      this.gameManager.bubblesArray.forEach(x => {
+        if (
+          x.getComponent(bubblesPrefab).rowIndex ===
+          collider.getComponent(bubblesPrefab).rowIndex
+        ) {
+          x.getComponent(bubblesPrefab).glow.active = true;
+        }
+      });
+    }
+    if (currBubIndex == 11) {
+      const adjBubble = this.gameManager
+        .getBubbleAnimator()
+        .getAdjacentBubbles(
+          this.gameManager.predictRow,
+          this.gameManager.predictCol
+        );
+      const bubblesToDestroy: Node[] = [];
+      adjBubble.forEach(adj => {
+        const visitedBubbles = new Set<Node>();
+        const spriteFrame = adj
+          .getComponent(bubblesPrefab)
+          .bubbles.getComponent(Sprite).spriteFrame;
+
+        this.gameManager
+          .getBubbleDestroyer()
+          .findConnectedBubbles(
+            adj,
+            spriteFrame,
+            visitedBubbles,
+            bubblesToDestroy
+          );
+      });
+      bubblesToDestroy.forEach(bb => {
+        bb.getComponent(bubblesPrefab).glow.active = true;
+      });
+    }
   }
 }
