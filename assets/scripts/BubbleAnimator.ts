@@ -221,6 +221,7 @@ export class BubbleAnimator {
     results.forEach(r => {
       if (r.collider.node.layer == 1) bubbleToDestroy.push(r.collider.node);
     });
+    
     this.gameManager
       .getFallingBubbleManager()
       .animateFallingBubbles(bubbleToDestroy);

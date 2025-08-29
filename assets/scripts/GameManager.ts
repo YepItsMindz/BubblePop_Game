@@ -32,7 +32,7 @@ import { bubblesPrefab } from './prefab/bubblesPrefab';
 const { ccclass, property } = _decorator;
 
 export const BUBBLES_SIZE = 68 * 0.625;
-export const MAP_FALL_SPEED = 15; // Units per second
+export const MAP_FALL_SPEED = 12; // Units per second
 
 @ccclass('GameManager')
 export class GameManager extends Component {
@@ -428,7 +428,7 @@ export class GameManager extends Component {
   update(deltaTime: number): void {
     if (!this.gameActive) return;
     //console.log(this.bubblePool);
-    console.log(this.getMaxBubbleRowIndex(), this.getMinBubbleRowIndex());
+    console.log(this.rows, this.getMinBubbleRowIndex());
 
     if (this.raycastActive && this.currentMousePosition) {
       this.raycastUpdateTimer += deltaTime;

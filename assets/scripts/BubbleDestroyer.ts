@@ -86,7 +86,7 @@ export class BubbleDestroyer {
       });
 
       this.gameManager.getFallingBubbleManager().checkForFallingBubbles();
-    } 
+    }
   }
 
   public findConnectedBubbles(
@@ -106,11 +106,11 @@ export class BubbleDestroyer {
     visited.add(bubble);
     result.push(bubble);
 
-    const bubblePos = new Vec2(
-      bubble.getWorldPosition().x,
-      bubble.getWorldPosition().y
+    const bubbleCmp = bubble.getComponent(bubblesPrefab);
+    const adjacentBubbles = this.getAdjacentBubbles(
+      bubbleCmp.rowIndex,
+      bubbleCmp.colIndex
     );
-    const adjacentBubbles = this.getAdjacentBubbles(bubblePos);
 
     adjacentBubbles.forEach(adjacentBubble => {
       this.findConnectedBubbles(
@@ -126,20 +126,32 @@ export class BubbleDestroyer {
     return node.getComponent(bubblesPrefab).bubbles.spriteFrame;
   }
 
-  public getAdjacentBubbles(centerPos: Vec2): Node[] {
+  public getAdjacentBubbles(row: number, col: number): Node[] {
     const adjacentBubbles: Node[] = [];
+    const targetRow = row;
+    const targetCol = col;
+
+    const adjacentPositions = [
+      { row: targetRow - 1, col: targetCol + (targetRow % 2 === 0 ? 1 : 0) }, // Top-right
+      { row: targetRow, col: targetCol + 1 }, // Right
+      { row: targetRow + 1, col: targetCol + (targetRow % 2 === 0 ? 1 : 0) }, // Bottom-right
+      { row: targetRow + 1, col: targetCol + (targetRow % 2 === 0 ? 0 : -1) }, // Bottom-left
+      { row: targetRow, col: targetCol - 1 }, // Left
+      { row: targetRow - 1, col: targetCol + (targetRow % 2 === 0 ? 0 : -1) }, // Top-left
+    ];
 
     this.gameManager.bubblesArray.forEach(bubble => {
-      if (bubble.active) {
-        const bubblePos = new Vec2(
-          bubble.getWorldPosition().x,
-          bubble.getWorldPosition().y
-        );
-        const distance = Vec2.distance(bubblePos, centerPos);
+      const bubbleComponent = bubble.getComponent(bubblesPrefab);
+      if (!bubbleComponent || !bubbleComponent.isGridBubble()) return;
 
-        if (distance > 0 && distance <= BUBBLES_SIZE * 1.2) {
-          adjacentBubbles.push(bubble);
-        }
+      const bubbleRow = bubbleComponent.getRowIndex();
+      const bubbleCol = bubbleComponent.getColIndex();
+      const isAdjacent = adjacentPositions.some(
+        pos => pos.row === bubbleRow && pos.col === bubbleCol
+      );
+
+      if (isAdjacent) {
+        adjacentBubbles.push(bubble);
       }
     });
 

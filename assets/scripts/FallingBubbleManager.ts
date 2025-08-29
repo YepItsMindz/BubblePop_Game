@@ -1,10 +1,10 @@
 import { Node, Vec2 } from 'cc';
-import { BUBBLES_SIZE } from './GameManager';
+import { BUBBLES_SIZE, GameManager } from './GameManager';
 import { bubblesPrefab } from './prefab/bubblesPrefab';
 import { destroyBubble } from './prefab/destroyBubble';
 
 export class FallingBubbleManager {
-  private gameManager: any;
+  private gameManager: GameManager;
 
   constructor(gameManager: any) {
     this.gameManager = gameManager;
@@ -53,7 +53,7 @@ export class FallingBubbleManager {
         this.findAllConnectedBubbles(bubble, visited, connectedToTop);
       }
     });
-
+    console.log(connectedToTop);
     const fallingBubbles: Node[] = [];
     this.gameManager.bubblesArray.forEach(bubble => {
       if (bubble.active && !connectedToTop.has(bubble)) {
@@ -63,6 +63,7 @@ export class FallingBubbleManager {
         }
       }
     });
+    console.log(fallingBubbles);
 
     if (fallingBubbles.length > 0) {
       // console.log(
@@ -77,24 +78,8 @@ export class FallingBubbleManager {
 
     const bubbleComponent = bubble.getComponent(bubblesPrefab);
     if (bubbleComponent && bubbleComponent.isGridBubble()) {
-      return bubbleComponent.getRowIndex() === this.gameManager.rows - 1;
+      return bubbleComponent.getRowIndex() == this.gameManager.rows - 1;
     }
-
-    const bubbleY = bubble.getWorldPosition().y;
-
-    for (const b of this.gameManager.bubblesArray) {
-      if (b.active) {
-        const bComponent = b.getComponent(bubblesPrefab);
-        if (
-          bComponent &&
-          bComponent.getRowIndex() === this.gameManager.rows - 1
-        ) {
-          const topRowY = b.getWorldPosition().y;
-          return Math.abs(bubbleY - topRowY) < BUBBLES_SIZE * 0.5;
-        }
-      }
-    }
-
     return false;
   }
 
@@ -110,11 +95,11 @@ export class FallingBubbleManager {
     visited.add(bubble);
     result.add(bubble);
 
-    const bubblePos = new Vec2(
-      bubble.getWorldPosition().x,
-      bubble.getWorldPosition().y
+    const bubbleCmp = bubble.getComponent(bubblesPrefab);
+    const adjacentBubbles = this.getAdjacentBubbles(
+      bubbleCmp.rowIndex,
+      bubbleCmp.colIndex
     );
-    const adjacentBubbles = this.getAdjacentBubbles(bubblePos);
 
     adjacentBubbles.forEach(adjacentBubble => {
       this.findAllConnectedBubbles(adjacentBubble, visited, result);
@@ -184,20 +169,32 @@ export class FallingBubbleManager {
     });
   }
 
-  public getAdjacentBubbles(centerPos: Vec2): Node[] {
+  public getAdjacentBubbles(row: number, col: number): Node[] {
     const adjacentBubbles: Node[] = [];
+    const targetRow = row;
+    const targetCol = col;
+
+    const adjacentPositions = [
+      { row: targetRow - 1, col: targetCol + (targetRow % 2 === 0 ? 1 : 0) }, // Top-right
+      { row: targetRow, col: targetCol + 1 }, // Right
+      { row: targetRow + 1, col: targetCol + (targetRow % 2 === 0 ? 1 : 0) }, // Bottom-right
+      { row: targetRow + 1, col: targetCol + (targetRow % 2 === 0 ? 0 : -1) }, // Bottom-left
+      { row: targetRow, col: targetCol - 1 }, // Left
+      { row: targetRow - 1, col: targetCol + (targetRow % 2 === 0 ? 0 : -1) }, // Top-left
+    ];
 
     this.gameManager.bubblesArray.forEach(bubble => {
-      if (bubble.active) {
-        const bubblePos = new Vec2(
-          bubble.getWorldPosition().x,
-          bubble.getWorldPosition().y
-        );
-        const distance = Vec2.distance(bubblePos, centerPos);
+      const bubbleComponent = bubble.getComponent(bubblesPrefab);
+      if (!bubbleComponent || !bubbleComponent.isGridBubble()) return;
 
-        if (distance > 0 && distance <= BUBBLES_SIZE * 1.2) {
-          adjacentBubbles.push(bubble);
-        }
+      const bubbleRow = bubbleComponent.getRowIndex();
+      const bubbleCol = bubbleComponent.getColIndex();
+      const isAdjacent = adjacentPositions.some(
+        pos => pos.row === bubbleRow && pos.col === bubbleCol
+      );
+
+      if (isAdjacent) {
+        adjacentBubbles.push(bubble);
       }
     });
 
