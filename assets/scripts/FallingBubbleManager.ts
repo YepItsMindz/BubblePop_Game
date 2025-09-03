@@ -53,7 +53,7 @@ export class FallingBubbleManager {
         this.findAllConnectedBubbles(bubble, visited, connectedToTop);
       }
     });
-    console.log(connectedToTop);
+
     const fallingBubbles: Node[] = [];
     this.gameManager.bubblesArray.forEach(bubble => {
       if (bubble.active && !connectedToTop.has(bubble)) {
@@ -63,7 +63,6 @@ export class FallingBubbleManager {
         }
       }
     });
-    console.log(fallingBubbles);
 
     if (fallingBubbles.length > 0) {
       // console.log(
@@ -77,10 +76,9 @@ export class FallingBubbleManager {
     if (!bubble.active) return false;
 
     const bubbleComponent = bubble.getComponent(bubblesPrefab);
-    if (bubbleComponent && bubbleComponent.isGridBubble()) {
-      return bubbleComponent.getRowIndex() == this.gameManager.rows - 1;
-    }
-    return false;
+    return (
+      bubbleComponent.getRowIndex() == this.gameManager.getMaxBubbleRowIndex()
+    );
   }
 
   public findAllConnectedBubbles(

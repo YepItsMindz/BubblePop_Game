@@ -428,7 +428,7 @@ export class GameManager extends Component {
   update(deltaTime: number): void {
     if (!this.gameActive) return;
     //console.log(this.bubblePool);
-    console.log(this.rows, this.getMinBubbleRowIndex());
+    console.log(this.getMaxBubbleRowIndex(), this.getMinBubbleRowIndex());
 
     if (this.raycastActive && this.currentMousePosition) {
       this.raycastUpdateTimer += deltaTime;

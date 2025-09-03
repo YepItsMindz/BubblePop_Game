@@ -57,6 +57,10 @@ export class InputHandler {
     const sf = this.gameManager.spriteAtlas.getSpriteFrame(
       `ball_${currentIndex}`
     );
+    if (currentIndex == 8)
+      bubble.setRotation(
+        this.gameManager.previewBubbleComponent.currentBubble.getRotation()
+      );
     const bubbleComponent = bubble.getComponent(bubblesPrefab);
     bubbleComponent.setImage(sf);
     bubbleComponent.disableCollider();
@@ -71,12 +75,21 @@ export class InputHandler {
     this.gameManager
       .getBubbleAnimator()
       .movingBubble(bubble, this.gameManager.lastCollider);
-
+    console.log(this.gameManager.path);
     this.gameManager.raycastActive = false;
     this.gameManager.getGraphicsRenderer().clearGraphics();
   }
 
   public predictedBubble(collider: Node): void {
+    if (
+      this.gameManager.previewBubbleComponent.currentBubbleIndex >= 8 &&
+      this.gameManager.previewBubbleComponent.currentBubbleIndex <= 11
+    ) {
+      this.gameManager.predictBubble.active = false;
+    } else {
+      this.gameManager.predictBubble.active = true;
+    }
+
     let lastPath = this.gameManager.path[this.gameManager.path.length - 1];
     const gridPos = this.gameManager
       .getBubbleAnimator()
@@ -131,6 +144,15 @@ export class InputHandler {
       rayOrigin.y + Math.sin(angle) * lineLength
     );
 
+    if (this.gameManager.previewBubbleComponent.currentBubbleIndex == 8) {
+      const degrees = angle * (180 / Math.PI) - 90;
+      this.gameManager.previewBubbleComponent.currentBubble.setRotationFromEuler(
+        0,
+        0,
+        degrees
+      );
+    }
+
     //const mask = (1 << 0) | (1 << 2) | (1 << 3);
     const results = PhysicsSystem2D.instance.raycast(
       rayOrigin,
@@ -181,8 +203,10 @@ export class InputHandler {
       collider.node === this.gameManager.rightWall
     ) {
       this.gameManager.path.push(point);
+
       this.gameManager.getGraphicsRenderer().drawLine(rayOrigin, endPoint);
-      this.reflectRay(rayOrigin, point);
+      if (this.gameManager.previewBubbleComponent.currentBubbleIndex != 8)
+        this.reflectRay(rayOrigin, point);
     } else {
       this.glowActivation(
         this.gameManager.previewBubbleComponent.currentBubbleIndex,
@@ -288,8 +312,9 @@ export class InputHandler {
       const direction = new Vec2();
       Vec2.subtract(direction, mousePos, rayOrigin);
       direction.normalize();
-      const angle = Math.atan2(direction.y, direction.x);
       const lineLength = 1500;
+      const angle = Math.atan2(direction.y, direction.x);
+
       // const sceen = view.getVisibleSize();
       const endPoint = new Vec2(
         rayOrigin.x + Math.cos(angle) * lineLength,

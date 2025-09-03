@@ -13,7 +13,6 @@ import {
 } from 'cc';
 import { BUBBLES_SIZE, GameManager, MAP_FALL_SPEED } from './GameManager';
 import { bubblesPrefab } from './prefab/bubblesPrefab';
-import { destroyBubble } from './prefab/destroyBubble';
 
 export class BubbleAnimator {
   private gameManager: GameManager;
@@ -144,7 +143,8 @@ export class BubbleAnimator {
     this.gameManager.bubblesArray.forEach(bb => {
       if (
         bb.getComponent(bubblesPrefab).getRowIndex() ==
-        collider.getComponent(bubblesPrefab).getRowIndex()
+          collider.getComponent(bubblesPrefab).getRowIndex() &&
+        bb.getWorldPosition().y <= this.gameManager.screenSize.height
       ) {
         bubbleToDestroy.push(bb);
       }
@@ -161,35 +161,37 @@ export class BubbleAnimator {
     this.gameManager.bubblesArray.forEach(bb => {
       const bbc = bb.getComponent(bubblesPrefab);
       const cc = collider.getComponent(bubblesPrefab);
-      if (
-        Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 2 &&
-        Math.abs(bbc.getColIndex() - cc.getColIndex()) <= 1
-      ) {
-        bubbleToDestroy.push(bb);
-      }
-      if (cc.getRowIndex() % 2 == 0) {
+      if (bb.getWorldPosition().y <= this.gameManager.screenSize.height) {
         if (
-          Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 1 &&
-          (Math.abs(bbc.getColIndex() - cc.getColIndex()) < 2 ||
-            bbc.getColIndex() - cc.getColIndex() == 2)
+          Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 2 &&
+          Math.abs(bbc.getColIndex() - cc.getColIndex()) <= 1
         ) {
           bubbleToDestroy.push(bb);
         }
-      } else {
-        if (
-          Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 1 &&
-          (Math.abs(bbc.getColIndex() - cc.getColIndex()) < 2 ||
-            bbc.getColIndex() - cc.getColIndex() == -2)
-        ) {
-          bubbleToDestroy.push(bb);
+        if (cc.getRowIndex() % 2 == 0) {
+          if (
+            Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 1 &&
+            (Math.abs(bbc.getColIndex() - cc.getColIndex()) < 2 ||
+              bbc.getColIndex() - cc.getColIndex() == 2)
+          ) {
+            bubbleToDestroy.push(bb);
+          }
+        } else {
+          if (
+            Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 1 &&
+            (Math.abs(bbc.getColIndex() - cc.getColIndex()) < 2 ||
+              bbc.getColIndex() - cc.getColIndex() == -2)
+          ) {
+            bubbleToDestroy.push(bb);
+          }
         }
-      }
 
-      if (
-        Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 0 &&
-        Math.abs(bbc.getColIndex() - cc.getColIndex()) <= 2
-      ) {
-        bubbleToDestroy.push(bb);
+        if (
+          Math.abs(bbc.getRowIndex() - cc.getRowIndex()) == 0 &&
+          Math.abs(bbc.getColIndex() - cc.getColIndex()) <= 2
+        ) {
+          bubbleToDestroy.push(bb);
+        }
       }
     });
     this.gameManager
@@ -219,9 +221,14 @@ export class BubbleAnimator {
     );
     const bubbleToDestroy = [];
     results.forEach(r => {
-      if (r.collider.node.layer == 1) bubbleToDestroy.push(r.collider.node);
+      if (
+        r.collider.node.layer == 1 &&
+        r.collider.node.getWorldPosition().y <=
+          this.gameManager.screenSize.height
+      )
+        bubbleToDestroy.push(r.collider.node);
     });
-    
+
     this.gameManager
       .getFallingBubbleManager()
       .animateFallingBubbles(bubbleToDestroy);
