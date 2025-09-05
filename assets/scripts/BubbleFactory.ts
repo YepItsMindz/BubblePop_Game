@@ -1,9 +1,9 @@
 import { instantiate, Node, Vec3, resources, JsonAsset } from 'cc';
-import { BUBBLES_SIZE } from './GameManager';
+import { BUBBLES_SIZE, GameManager } from './GameManager';
 import { bubblesPrefab } from './prefab/bubblesPrefab';
 
 export class BubbleFactory {
-  private gameManager: any;
+  private gameManager: GameManager;
   private tokenMap: { [key: string]: number } = {
     // common mappings — letters map to fixed colours, unknown tokens fallback to random
     o: 4,
@@ -38,8 +38,6 @@ export class BubbleFactory {
           const tokens = line.split(/\s+/);
           tokenized.push(tokens);
         }
-        this.gameManager.rows = rows;
-
         for (let r = 0; r < rows; r++) {
           const i = 10 + r;
           const tokens = tokenized[r];
@@ -53,6 +51,15 @@ export class BubbleFactory {
               this.createBubbleFromToken(i, j, tokens[k]);
             }
           }
+        }
+        this.gameManager.rows = rows;
+
+        if (
+          this.gameManager.getMaxBubbleRowIndex() -
+            this.gameManager.getMinBubbleRowIndex() <
+          this.gameManager.totalRows
+        ) {
+          this.addNewRowsEfficient();
         }
       }
     });
@@ -85,119 +92,60 @@ export class BubbleFactory {
     this.gameManager.bubblesArray.push(node);
   }
 
-  public addNewRowsEfficient(numRows: number): void {
-    console.log(`Adding ${numRows} new rows to the map efficiently`);
-
-    const newBubbles: Node[] = [];
+  public addNewRowsEfficient(): void {
     const startRow = 10 + this.gameManager.rows;
     resources.load('patterns/patterns', JsonAsset, (err, jsonAsset) => {
       if (!err) {
         const data = jsonAsset.json as any;
-        const categories = Object.keys(data);
-        const chosenCategory = 'tm';
+
+        // Choose category based on maxRows
+        let chosenCategory = 'tm';
+        if (this.gameManager.rows > 200) {
+          chosenCategory = 'im';
+        } else if (this.gameManager.rows > 100) {
+          chosenCategory = 'nm';
+        }
+
+        console.log(
+          `Using pattern category: ${chosenCategory} for row ${this.gameManager.rows}`
+        );
+
         const proceedWithPatterns = (data: any) => {
-          if (!this.patternPool) {
-            const patterns = data[chosenCategory];
-            this.patternPool = patterns.map((p: string[]) => {
-              return p.map(line =>
-                String(line || '')
-                  .trim()
-                  .split(/\s+/)
-              );
-            });
-          }
+          // Always refresh pattern pool for the current category
+          const patterns = data[chosenCategory];
+          this.patternPool = patterns.map((p: string[]) => {
+            return p.map(line =>
+              String(line || '')
+                .trim()
+                .split(/\s+/)
+            );
+          });
 
-          // If there is no current pattern or it is finished, pick a new one from the pool
-          const pickNewPattern = () => {
-            if (!this.patternPool || this.patternPool.length === 0) return null;
-            const idx = Math.floor(Math.random() * this.patternPool.length);
-            this.currentPatternLines = this.patternPool[idx];
-            this.currentPatternPos = 0;
-            return this.currentPatternLines;
-          };
+          // Pick a new pattern from the pool
+          const idx = Math.floor(Math.random() * this.patternPool.length);
+          const pattern = this.patternPool[idx];
 
-          if (
-            !this.currentPatternLines ||
-            this.currentPatternPos >= (this.currentPatternLines.length || 0)
-          ) {
-            pickNewPattern();
-          }
-
-          // fill rows, finishing current pattern first then picking new patterns as needed
+          // Add all rows from the pattern
           let rowsAdded = 0;
-          while (rowsAdded < numRows) {
-            if (
-              !this.currentPatternLines ||
-              this.currentPatternLines.length === 0
-            ) {
-              // no valid pattern lines — fallback to random for the remaining rows
-              const remaining = numRows - rowsAdded;
-              for (let rr = 0; rr < remaining; rr++) {
-                const i = startRow + rowsAdded + rr;
-                if (i % 2 == 0) {
-                  for (let j = 0; j < this.gameManager.cols; j++) {
-                    const node = this.gameManager.getBubbleFromPool();
-                    const randomBallIndex = Math.floor(Math.random() * 3) + 4;
-                    const sf = this.gameManager.spriteAtlas.getSpriteFrame(
-                      `ball_${randomBallIndex}`
-                    );
-                    const bubbleComponent = node.getComponent(bubblesPrefab);
-                    bubbleComponent.setImage(sf);
-                    bubbleComponent.setGridPosition(i, j, randomBallIndex);
-                    this.setOriginPos(node, i, j);
-                    newBubbles.push(node);
-                  }
-                } else {
-                  for (let j = 1; j < this.gameManager.cols; j++) {
-                    const node = this.gameManager.getBubbleFromPool();
-                    const randomBallIndex = Math.floor(Math.random() * 3) + 4;
-                    const sf = this.gameManager.spriteAtlas.getSpriteFrame(
-                      `ball_${randomBallIndex}`
-                    );
-                    const bubbleComponent = node.getComponent(bubblesPrefab);
-                    bubbleComponent.setImage(sf);
-                    bubbleComponent.setGridPosition(i, j, randomBallIndex);
-                    this.setOriginPos(node, i, j);
-                    if (j === 0 || j === this.gameManager.cols)
-                      bubbleComponent.bubbles.node.active = false;
-                    newBubbles.push(node);
-                  }
-                }
-              }
-              rowsAdded = numRows;
-              break;
-            }
-
-            // take the next line from current pattern
-            const tokens =
-              this.currentPatternLines[this.currentPatternPos] || [];
+          for (let row = 0; row < pattern.length; row++) {
+            const tokens = pattern[row];
             const i = startRow + rowsAdded;
-            if (i % 2 === 0) {
-              for (let j = 0; j <= tokens.length; j++)
+
+            if (i % 2 == 0) {
+              for (let j = 0; j < tokens.length; j++) {
                 this.createBubbleFromToken(i, j, tokens[j]);
+              }
             } else {
               for (let k = 0; k < tokens.length; k++) {
                 const j = k + 1;
                 this.createBubbleFromToken(i, j, tokens[k]);
               }
             }
-
             rowsAdded++;
-            this.currentPatternPos++;
-
-            // if we've finished the current pattern, reset so next loop picks a new one
-            if (this.currentPatternPos >= this.currentPatternLines.length) {
-              this.currentPatternLines = null;
-              this.currentPatternPos = 0;
-            }
           }
 
-          // If we used createBubbleFromToken directly, we must still collect the created nodes into newBubbles for parenting
-          // (createBubbleFromToken already adds to gameManager.bubblesArray and node parent, but to be consistent with previous flow,
-          // we won't duplicate adding here.)
-
-          // update rows count
-          this.gameManager.rows += numRows;
+          // Update rows count based on the pattern height
+          this.gameManager.rows += pattern.length;
         };
 
         if (this.patternPool) {

@@ -120,13 +120,7 @@ export class BubbleAnimator {
             1 <
           this.gameManager.totalRows
         ) {
-          this.gameManager
-            .getBubbleFactory()
-            .addNewRowsEfficient(
-              this.gameManager.totalRows -
-                (this.gameManager.getMaxBubbleRowIndex() -
-                  this.gameManager.getMinBubbleRowIndex())
-            );
+          this.gameManager.getBubbleFactory().addNewRowsEfficient();
         }
       },
       this.calculateAnimationTime() * 1000 + 50
