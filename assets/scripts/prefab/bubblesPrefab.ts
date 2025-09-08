@@ -57,7 +57,7 @@ export class bubblesPrefab extends Component {
 
   getPosY(): number {
     const BUBBLES_SIZE = 68;
-    return this.getRowIndex() * BUBBLES_SIZE * 0.85;
+    return this.getRowIndex() * BUBBLES_SIZE * 0.65;
   }
 
   getPosX(): number {
@@ -66,13 +66,15 @@ export class bubblesPrefab extends Component {
     if (this.getRowIndex() % 2 === 0) {
       return (
         (this.getColIndex() - (main.getComponent(GameManager).cols - 1) / 2) *
-        BUBBLES_SIZE
+        BUBBLES_SIZE *
+        0.9
       );
     } else {
       return (
         (this.getColIndex() - (main.getComponent(GameManager).cols - 1) / 2) *
-          BUBBLES_SIZE -
-        BUBBLES_SIZE / 2
+          BUBBLES_SIZE *
+          0.9 -
+        (BUBBLES_SIZE * 0.9) / 2
       );
     }
   }

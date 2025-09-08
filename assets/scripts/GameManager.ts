@@ -328,12 +328,14 @@ export class GameManager extends Component {
     rowIndex: number,
     colIndex: number
   ): { posX: number; posY: number } {
-    const posY = rowIndex * BUBBLES_SIZE * 0.85;
+    const posY = rowIndex * BUBBLES_SIZE * 0.6;
     let posX;
     if (rowIndex % 2 === 0) {
-      posX = (colIndex - (this.cols - 1) / 2) * BUBBLES_SIZE;
+      posX = (colIndex - (this.cols - 1) / 2) * BUBBLES_SIZE * 0.9;
     } else {
-      posX = (colIndex - (this.cols - 1) / 2) * BUBBLES_SIZE - BUBBLES_SIZE / 2;
+      posX =
+        (colIndex - (this.cols - 1) / 2) * BUBBLES_SIZE * 0.9 -
+        (BUBBLES_SIZE * 0.9) / 2;
     }
     return { posX, posY };
   }

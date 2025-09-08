@@ -301,11 +301,13 @@ export class BubbleAnimator {
         const isOccupied = this.isPositionOccupied(newRow, newCol);
         if (isOccupied) continue;
         if (!isOccupied) {
-          if (position.row == 0) posX += BUBBLES_SIZE * position.col;
-          else posX += BUBBLES_SIZE * position.col + BUBBLES_SIZE / 2;
-          posY += BUBBLES_SIZE * position.row * 0.85;
-          lastPath.x += BUBBLES_SIZE * position.col;
-          lastPath.y += BUBBLES_SIZE * position.row * 0.85;
+          if (position.row == 0) posX += BUBBLES_SIZE * position.col * 0.9;
+          else
+            posX +=
+              BUBBLES_SIZE * position.col * 0.9 + (0.9 * BUBBLES_SIZE) / 2;
+          posY += BUBBLES_SIZE * position.row * 0.65;
+          lastPath.x += BUBBLES_SIZE * position.col * 0.9;
+          lastPath.y += BUBBLES_SIZE * position.row * 0.65;
           bubble
             .getComponent(bubblesPrefab)
             .setGridPosition(
@@ -333,11 +335,13 @@ export class BubbleAnimator {
         const isOccupied = this.isPositionOccupied(newRow, newCol);
         if (isOccupied) continue;
         if (!isOccupied) {
-          if (position.row == 0) posX += BUBBLES_SIZE * position.col;
-          else posX += BUBBLES_SIZE * position.col - BUBBLES_SIZE / 2;
-          posY += BUBBLES_SIZE * position.row * 0.85;
-          lastPath.x += BUBBLES_SIZE * position.row;
-          lastPath.y += BUBBLES_SIZE * position.col * 0.85;
+          if (position.row == 0) posX += BUBBLES_SIZE * 0.9 * position.col;
+          else
+            posX +=
+              BUBBLES_SIZE * position.col * 0.9 - (0.9 * BUBBLES_SIZE) / 2;
+          posY += BUBBLES_SIZE * position.row * 0.65;
+          lastPath.x += BUBBLES_SIZE * position.row * 0.9;
+          lastPath.y += BUBBLES_SIZE * position.col * 0.65;
           bubble
             .getComponent(bubblesPrefab)
             .setGridPosition(
