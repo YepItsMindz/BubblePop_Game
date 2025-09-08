@@ -114,6 +114,8 @@ export class BubbleAnimator {
           }
         }
 
+        this.waterDropEffect(bubble);
+
         if (
           this.gameManager.getMaxBubbleRowIndex() -
             this.gameManager.getMinBubbleRowIndex() +
@@ -129,6 +131,109 @@ export class BubbleAnimator {
     if (this.gameManager.previewBubbleComponent) {
       this.gameManager.previewBubbleComponent.updateShootBubble();
     }
+  }
+
+  waterDropEffect(bubble: Node) {
+    // Collect and group bubbles by their distance from the center
+    const bubbleGroups = new Map<number, Array<Node>>();
+    const centerBubble = bubble.getComponent(bubblesPrefab);
+
+    this.gameManager.bubblesArray.forEach(bb => {
+      const bubbleComp = bb.getComponent(bubblesPrefab);
+
+      // Calculate exact distance in grid units
+      const rowDiff = Math.abs(
+        bubbleComp.getRowIndex() - centerBubble.getRowIndex()
+      );
+      const colDiff = Math.abs(
+        bubbleComp.getColIndex() - centerBubble.getColIndex()
+      );
+
+      // Calculate grid distance (considering hexagonal grid)
+      const distance = Math.max(rowDiff, Math.floor(colDiff + rowDiff / 2));
+
+      // Skip bubbles that are too far away
+      if (distance >= 5) return;
+
+      // Group bubbles by their distance
+      if (!bubbleGroups.has(distance)) {
+        bubbleGroups.set(distance, []);
+      }
+      bubbleGroups.get(distance)?.push(bb);
+    });
+
+    // Sort distances from nearest to farthest
+    const sortedDistances = Array.from(bubbleGroups.keys()).sort(
+      (a, b) => a - b
+    );
+
+    // Animation parameters
+    const maxMoveDistance = 10; // Giảm khoảng cách di chuyển tối đa
+    const duration = 0.15; // Giữ nguyên thời gian
+    const layerDelay = 0.05; // Giữ nguyên độ trễ
+
+    // Animate each distance group
+    sortedDistances.forEach((distance, index) => {
+      const bubbles = bubbleGroups.get(distance) || [];
+
+      // Sử dụng hàm mũ với độ giảm nhanh hơn cho khoảng cách ngắn
+      const moveDistance = maxMoveDistance * Math.pow(0.6, distance);
+      bubbles.forEach(node => {
+        const centerPos = bubble.getWorldPosition();
+        const currentPos = node.getWorldPosition();
+
+        // Calculate direction from center to bubble
+        const direction = new Vec3(
+          currentPos.x - centerPos.x,
+          currentPos.y - centerPos.y,
+          0
+        ).normalize();
+
+        // Calculate map movement compensation
+        const totalAnimationTime = duration * 2 + index * layerDelay;
+        const mapMovementDuringFlight = this.gameManager.isMovingToMinLine
+          ? 0
+          : totalAnimationTime * MAP_FALL_SPEED;
+
+        // Store original position
+        const originalPos = node.getWorldPosition().clone();
+
+        // Create and start the animation
+        const tween = new Tween(node);
+
+        // First movement: away from center with smooth acceleration
+        tween
+          .delay(index * layerDelay) // Delay increases with each layer
+          .to(
+            duration,
+            {
+              worldPosition: new Vec3(
+                originalPos.x + direction.x * moveDistance,
+                originalPos.y + direction.y * moveDistance,
+                originalPos.z
+              ),
+            },
+            {
+              easing: 'cubicOut', // Thay đổi easing function cho mượt mà hơn
+            }
+          )
+          // Return to original position with bounce effect
+          .to(
+            duration,
+            {
+              worldPosition: new Vec3(
+                originalPos.x,
+                originalPos.y - mapMovementDuringFlight,
+                originalPos.z
+              ),
+            },
+            {
+              // easing: 'bounceOut', // Sử dụng bounce effect cho chuyển động tự nhiên hơn
+            }
+          )
+          .start();
+      });
+    });
   }
 
   lineBubbleBuffer(bubble: Node, collider: Node) {

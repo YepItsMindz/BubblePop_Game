@@ -1,4 +1,4 @@
-import { instantiate, Node, Vec3, resources, JsonAsset } from 'cc';
+import { instantiate, Node, Vec3, resources, JsonAsset, UITransform } from 'cc';
 import { BUBBLES_SIZE, GameManager } from './GameManager';
 import { bubblesPrefab } from './prefab/bubblesPrefab';
 
@@ -97,6 +97,7 @@ export class BubbleFactory {
     resources.load('patterns/patterns', JsonAsset, (err, jsonAsset) => {
       if (!err) {
         const data = jsonAsset.json as any;
+        console.log(data['nm']);
 
         // Choose category based on maxRows
         let chosenCategory = 'tm';
@@ -105,6 +106,9 @@ export class BubbleFactory {
         } else if (this.gameManager.rows > 100) {
           chosenCategory = 'nm';
         }
+
+        // Reset pattern pool to force loading new patterns for the current category
+        this.patternPool = null;
 
         console.log(
           `Using pattern category: ${chosenCategory} for row ${this.gameManager.rows}`
@@ -152,7 +156,7 @@ export class BubbleFactory {
           // we already have patterns cached — proceed synchronously
           // build a fake data object to satisfy proceedWithPatterns shape
           const dataObj: any = {};
-          dataObj['tm'] = this.patternPool.map(p =>
+          dataObj[chosenCategory] = this.patternPool.map(p =>
             p.map(lineTokens => lineTokens.join(' '))
           );
           proceedWithPatterns(dataObj);

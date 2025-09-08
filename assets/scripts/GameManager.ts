@@ -80,7 +80,7 @@ export class GameManager extends Component {
 
   public rows: number = 20;
   public cols: number = 13;
-  public totalRows: number = 20;
+  public totalRows: number = 25;
   public bubblesArray: Node[] = [];
   public groupBubbles: Node[] = [];
   public bubblePool: NodePool = new NodePool();
