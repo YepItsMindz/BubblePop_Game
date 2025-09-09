@@ -33,6 +33,22 @@ export class PreviewBubble extends Component {
   public previewBubble: Node = null;
   public nextBubbleIndex: number = 0;
   public currentBubbleIndex: number = 0;
+  public rows: number = 0;
+
+  private getDifficultyRange(): { min: number; max: number } {
+    if (this.rows > 200) {
+      return { min: 1, max: 7 }; // im difficulty
+    } else if (this.rows > 100) {
+      return { min: 3, max: 7 }; // nm difficulty
+    } else {
+      return { min: 4, max: 6 }; // tm difficulty
+    }
+  }
+
+  private getRandomBubbleIndex(): number {
+    const range = this.getDifficultyRange();
+    return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+  }
 
   // Reference to the newPosition method from main class
   public newPosition: (nodePos: Vec2, point: Vec2) => Vec2;
@@ -40,7 +56,7 @@ export class PreviewBubble extends Component {
   createShootBubble() {
     if (!this.previewBubble) {
       this.currentBubble = instantiate(this.bubbles);
-      this.currentBubbleIndex = Math.floor(Math.random() * 3) + 4;
+      this.currentBubbleIndex = this.getRandomBubbleIndex();
       const sf = this.spriteAtlas.getSpriteFrame(
         `ball_${this.currentBubbleIndex}`
       );
@@ -51,7 +67,7 @@ export class PreviewBubble extends Component {
       this.currentBubble.setWorldPosition(this.curBubble.getWorldPosition());
 
       this.previewBubble = instantiate(this.bubbles);
-      this.nextBubbleIndex = Math.floor(Math.random() * 3) + 4;
+      this.nextBubbleIndex = this.getRandomBubbleIndex();
       const sf2 = this.spriteAtlas.getSpriteFrame(
         `ball_${this.nextBubbleIndex}`
       );
@@ -73,7 +89,7 @@ export class PreviewBubble extends Component {
       this.currentBubble.getComponent(bubblesPrefab).bubbleIndex =
         this.currentBubbleIndex;
 
-      this.nextBubbleIndex = Math.floor(Math.random() * 3) + 4;
+      this.nextBubbleIndex = this.getRandomBubbleIndex();
       const sf2 = this.spriteAtlas.getSpriteFrame(
         `ball_${this.nextBubbleIndex}`
       );

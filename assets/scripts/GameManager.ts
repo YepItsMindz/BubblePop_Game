@@ -32,7 +32,7 @@ import { bubblesPrefab } from './prefab/bubblesPrefab';
 const { ccclass, property } = _decorator;
 
 export const BUBBLES_SIZE = 68 * 0.625;
-export const MAP_FALL_SPEED = 12; // Units per second
+export const MAP_FALL_SPEED = 10; // Units per second
 
 @ccclass('GameManager')
 export class GameManager extends Component {

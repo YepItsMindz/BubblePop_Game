@@ -65,6 +65,7 @@ export class BubbleAnimator {
     );
     this.gameManager.path[this.gameManager.path.length - 1] = compensatedPath;
     this.animateBubble(bubble);
+    this.gameManager.previewBubbleComponent.rows = this.gameManager.rows;
 
     setTimeout(
       () => {
@@ -134,7 +135,6 @@ export class BubbleAnimator {
   }
 
   waterDropEffect(bubble: Node) {
-    // Collect and group bubbles by their distance from the center
     const bubbleGroups = new Map<number, Array<Node>>();
     const centerBubble = bubble.getComponent(bubblesPrefab);
 
@@ -149,25 +149,20 @@ export class BubbleAnimator {
         bubbleComp.getColIndex() - centerBubble.getColIndex()
       );
 
-      // Calculate grid distance (considering hexagonal grid)
       const distance = Math.max(rowDiff, Math.floor(colDiff + rowDiff / 2));
 
-      // Skip bubbles that are too far away
-      if (distance >= 5) return;
+      if (distance >= 6) return;
 
-      // Group bubbles by their distance
       if (!bubbleGroups.has(distance)) {
         bubbleGroups.set(distance, []);
       }
       bubbleGroups.get(distance)?.push(bb);
     });
 
-    // Sort distances from nearest to farthest
     const sortedDistances = Array.from(bubbleGroups.keys()).sort(
       (a, b) => a - b
     );
 
-    // Animation parameters
     const maxMoveDistance = 10; // Giảm khoảng cách di chuyển tối đa
     const duration = 0.15; // Giữ nguyên thời gian
     const layerDelay = 0.05; // Giữ nguyên độ trễ
@@ -176,8 +171,8 @@ export class BubbleAnimator {
     sortedDistances.forEach((distance, index) => {
       const bubbles = bubbleGroups.get(distance) || [];
 
-      // Sử dụng hàm mũ với độ giảm nhanh hơn cho khoảng cách ngắn
-      const moveDistance = maxMoveDistance * Math.pow(0.6, distance);
+      // Calculate moveDistance with quadratic falloff for more contrast between layers
+      const moveDistance = maxMoveDistance * Math.pow((5 - distance) / 5, 1);
       bubbles.forEach(node => {
         const centerPos = bubble.getWorldPosition();
         const currentPos = node.getWorldPosition();
@@ -200,37 +195,39 @@ export class BubbleAnimator {
 
         // Create and start the animation
         const tween = new Tween(node);
+        const fallSpeedPerSecond = this.gameManager.isMovingToMinLine
+          ? 0
+          : MAP_FALL_SPEED;
 
-        // First movement: away from center with smooth acceleration
+        // Calculate falls for each phase of animation
+        const delayFall = fallSpeedPerSecond * (index * layerDelay); // Fall during delay
+        const midFall = fallSpeedPerSecond * duration; // Fall during first movement
+        const endFall = fallSpeedPerSecond * duration; // Fall during return movement
+
         tween
-          .delay(index * layerDelay) // Delay increases with each layer
+          .delay(index * layerDelay)
           .to(
             duration,
             {
               worldPosition: new Vec3(
                 originalPos.x + direction.x * moveDistance,
-                originalPos.y + direction.y * moveDistance,
+                originalPos.y +
+                  direction.y * moveDistance -
+                  (delayFall + midFall),
                 originalPos.z
               ),
             },
             {
-              easing: 'cubicOut', // Thay đổi easing function cho mượt mà hơn
+              easing: 'cubicOut',
             }
           )
-          // Return to original position with bounce effect
-          .to(
-            duration,
-            {
-              worldPosition: new Vec3(
-                originalPos.x,
-                originalPos.y - mapMovementDuringFlight,
-                originalPos.z
-              ),
-            },
-            {
-              // easing: 'bounceOut', // Sử dụng bounce effect cho chuyển động tự nhiên hơn
-            }
-          )
+          .to(duration, {
+            worldPosition: new Vec3(
+              originalPos.x,
+              originalPos.y - (delayFall + midFall + endFall),
+              originalPos.z
+            ),
+          })
           .start();
       });
     });

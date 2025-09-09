@@ -4,15 +4,16 @@ import { bubblesPrefab } from './prefab/bubblesPrefab';
 
 export class BubbleFactory {
   private gameManager: GameManager;
-  private tokenMap: { [key: string]: number } = {
-    // common mappings — letters map to fixed colours, unknown tokens fallback to random
-    o: 4,
-    p: 5,
-    q: 6,
-    a: 1,
-    b: 2,
-    y: 3,
-    v: 7,
+  private tokenMap: { [key: string]: number } = {};
+  private difficultyTokens = {
+    tm: ['o'],
+    nm: ['o', 'p'],
+    im: ['o', 'p', 'q', 'a', 'b', 'y'],
+  };
+  private difficultyRanges = {
+    tm: { min: 4, max: 6 },
+    nm: { min: 3, max: 7 },
+    im: { min: 1, max: 7 },
   };
   // Pattern cache and current pattern state so we can finish a pattern before switching
   private patternPool: string[][][] | null = null;
@@ -27,9 +28,28 @@ export class BubbleFactory {
     resources.load('patterns/patterns', JsonAsset, (err, jsonAsset) => {
       if (!err) {
         const data = jsonAsset.json as any;
-        const patterns = data['tm'];
+        const difficulty = 'tm'; // Start with tm difficulty
+        const patterns = data[difficulty];
         const chosenPattern =
           patterns[Math.floor(Math.random() * patterns.length)];
+
+        // Reset and generate new token mappings based on difficulty
+        this.tokenMap = {};
+        const range = this.difficultyRanges[difficulty];
+        const tokens = this.difficultyTokens[difficulty];
+        const usedValues = new Set<number>();
+
+        // Assign random values to tokens
+        for (const token of tokens) {
+          let value;
+          do {
+            value =
+              Math.floor(Math.random() * (range.max - range.min + 1)) +
+              range.min;
+          } while (usedValues.has(value));
+          this.tokenMap[token] = value;
+          usedValues.add(value);
+        }
 
         const rows = chosenPattern.length;
         const tokenized: string[][] = [];
@@ -70,11 +90,21 @@ export class BubbleFactory {
     let bubbleIndex: number;
 
     if (token === '-') {
-      let num = 0;
+      const difficulty =
+        this.gameManager.rows > 200
+          ? 'im'
+          : this.gameManager.rows > 100
+            ? 'nm'
+            : 'tm';
+      const range = this.difficultyRanges[difficulty];
+      const usedValues = Object.keys(this.tokenMap).map(
+        key => this.tokenMap[key]
+      );
+
       do {
-        num = Math.floor(Math.random() * 3) + 4; // random trong [4,5,6]
-      } while (num === 4);
-      bubbleIndex = num;
+        bubbleIndex =
+          Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+      } while (usedValues.indexOf(bubbleIndex) !== -1);
     } else if (this.tokenMap.hasOwnProperty(token)) {
       bubbleIndex = this.tokenMap[token];
     }
@@ -128,6 +158,24 @@ export class BubbleFactory {
           // Pick a new pattern from the pool
           const idx = Math.floor(Math.random() * this.patternPool.length);
           const pattern = this.patternPool[idx];
+
+          // Reset and generate new token mappings based on current difficulty
+          this.tokenMap = {};
+          const range = this.difficultyRanges[chosenCategory];
+          const tokens = this.difficultyTokens[chosenCategory];
+          const usedValues = new Set<number>();
+
+          // Assign random values to tokens
+          for (const token of tokens) {
+            let value;
+            do {
+              value =
+                Math.floor(Math.random() * (range.max - range.min + 1)) +
+                range.min;
+            } while (usedValues.has(value));
+            this.tokenMap[token] = value;
+            usedValues.add(value);
+          }
 
           // Add all rows from the pattern
           let rowsAdded = 0;
